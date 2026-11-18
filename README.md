@@ -732,9 +732,6 @@ Verifikasi L3VPN: `show route table <VRF>.inet.0`, `show route forwarding-table 
 
 ## 11. Template Konfigurasi + Penjelasan
 
-> **Bab ini adalah kumpulan template siap pakai.** Setiap template terdiri dari: Tujuan → Kapan Dipakai → Template (`set` format) → Penjelasan Per Blok → Verifikasi → Kesalahan Umum.
-> **Cara pakai:** Copy template → ganti semua `<...>` → `show | compare` → `commit check` → `commit confirmed`.
-
 ### 11.1 Template A — Golden Baseline (System & Hardening)
 
 **Tujuan:** Baseline awal untuk setiap device baru. Tanpa baseline ini, device tidak boleh masuk produksi.
@@ -1524,20 +1521,6 @@ root# commit confirmed 5
 | BGP Group | `UPPER-SNAKE` | `<GROUP-NAME>` |
 | Community | `target:<AS>:<NN>` | `target:<AS>:<NN>` |
 | RD | `<AS>:<NN>` | `<AS>:<NN>` |
-
-### Golden Rules
-
-1. Selalu `show | compare` sebelum commit.
-2. Selalu `commit confirmed` untuk perubahan remote.
-3. Selalu `commit comment` dengan nomor tiket.
-4. Jangan pernah enable Telnet / FTP di produksi.
-5. Jangan pernah pakai SNMP community plaintext.
-6. Loopback adalah identitas — jangan pakai IP fisik untuk BGP / LDP / RR.
-7. MTU harus konsisten end-to-end.
-8. Default deny di semua policy & firewall — `reject` eksplisit di term terakhir.
-9. Backup sebelum change, verifikasi sesudah change.
-10. Jika ragu, `deactivate` dulu, jangan `delete`.
-
 
 ## Appendix B: Quick Reference
 
