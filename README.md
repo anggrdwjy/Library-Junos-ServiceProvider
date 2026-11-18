@@ -1520,7 +1520,6 @@ show route table <VRF>.inet.0        # Route via sham-link, bukan External
 
 **Lesson:** Sham-link bukan magic — ini cost engineering. Test failover sham-link wajib.
 
----
 
 ### 14.7 RE Protection di Bawah Serangan
 
@@ -1548,7 +1547,6 @@ show route <LOOPBACK>          # Apakah loopback bocor ke eBGP?
 * Monitoring counter DENY adalah early warning.
 * Loopback adalah identitas internal — jangan expose ke internet.
 
----
 
 ## 15. Operasi & Change Management
 
@@ -1572,8 +1570,6 @@ root# show | compare
 root# commit confirmed 5
 ```
 
-**Automated Backup:** Pakai `system archival configuration transfer-on-commit` + `archive-sites` dari vault. Jangan hardcode kredensial di README.
-
 ### 15.2 Troubleshooting Framework
 
 1. **Apa yang berubah?** — `show system commit`, `show | compare`
@@ -1596,30 +1592,6 @@ root# commit confirmed 5
 | AS-Override tidak jalan | CE AS beda, `as-override` tidak di PE | Pastikan CE AS sama untuk test |
 | Sham-Link tidak Full | `lo0.1` tidak di VRF, `sham-link-remote` salah | Cek `lo0.1` di VRF |
 
-### 15.3 Change Management Checklist
-
-**Pre-Change:**
-- [ ] Tiket / CR approved, maintenance window jelas
-- [ ] Config backup terbaru tersimpan
-- [ ] `show system commit` — tidak ada commit yang tidak dijelaskan
-- [ ] Rollback plan ditulis (rollback ke commit mana?)
-- [ ] `commit check` lolos
-- [ ] Peer / NOC diberitahu
-
-**During Change:**
-- [ ] Pakai `commit confirmed <5-10>` untuk perubahan remote
-- [ ] `show | compare` sebelum setiap commit
-- [ ] Test: `ping`, `show ospf neighbor`, `show bgp summary`, `show mpls lsp`, `show route table <VRF>`
-- [ ] Catat waktu & output verifikasi di tiket
-
-**Post-Change:**
-- [ ] `commit` final (konfirmasi `commit confirmed`)
-- [ ] Verifikasi 15 menit: tidak ada flap, alarm, atau error log
-- [ ] `show system commit` — commit comment benar
-- [ ] Update dokumentasi / diagram jika topologi berubah
-- [ ] Tutup tiket dengan bukti (before/after)
-
----
 
 ## Appendix A: Naming & Golden Rules
 
@@ -1649,7 +1621,6 @@ root# commit confirmed 5
 9. Backup sebelum change, verifikasi sesudah change.
 10. Jika ragu, `deactivate` dulu, jangan `delete`.
 
----
 
 ## Appendix B: Quick Reference
 
@@ -1681,10 +1652,6 @@ show route table <VRF>.inet.0
 show firewall filter <FILTER>
 show firewall counter
 ```
-
----
-
-> **Disclaimer:** Dokumen ini adalah panduan implementasi. Selalu validasi di lab / staging sebelum produksi dan ikuti change management organisasi kamu. Semua nilai di sini adalah placeholder — isi dari IPAM / vault resmi kamu. Jangan publish nilai produksi di README public.
 
 **© 2026 — Junos OS Implementation & Operations Guide v4.0 | Professional, Public-Safe**
 
