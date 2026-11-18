@@ -1,19 +1,10 @@
 # Juniper Networks® Junos® OS — Implementation & Operations Guide
 
-> **README Utama | v4.0 — Professional Edition (Public-Safe)**
-> **Dokumen ini tidak berisi nilai produksi.** Semua IP, AS, password, hostname, dan nama customer diganti placeholder.
-> **Nilai aktual hanya di IPAM / vault internal. Jangan publish nilai produksi di README.**
-
 | Atribut | Detail |
 | :--- | :--- |
-| **Versi** | **v4.0 — Professional, Public-Safe** |
-| **Tanggal** | 18 November 2026 |
-| **Menggantikan** | v3.0 (terlalu detail, over-exposed — di-retire) |
 | **Berlaku untuk** | Junos OS / Junos OS Evolved |
 | **Platform** | MX, PTX, ACX, EX, QFX, SRX, vMX / vSRX / vQFX |
 | **Audiens** | Network Engineer, NOC, Architect, Pre-Sales |
-| **Klasifikasi** | **PUBLIC-SAFE** — Aman dibagikan ke customer / partner / GitHub |
-| **Sumber Kebenaran** | File `.conf` di repo ini + IPAM / vault internal |
 
 ### Prinsip Dokumen Ini
 
@@ -24,7 +15,6 @@
 
 ### Konvensi
 
-* `<>` = wajib diganti dari IPAM / vault. `[]` = opsional.
 * `root>` = Operational Mode. `root#` = Configuration Mode. Jangan ketik prompt-nya.
 * Setiap bab: `Prinsip → Konfigurasi (template) → Verifikasi → Best Practice`.
 * Perubahan remote wajib `commit confirmed`. Perubahan tanpa `show | compare` dilarang.
@@ -32,8 +22,6 @@
 ---
 
 ## Daftar Isi
-
-> Daftar isi disusun mengikuti standar penulisan dokumen teknis: penomoran berjenjang (Bab — Subbab), judul sesuai heading, dan urutan sesuai isi dokumen.
 
 1. [Overview & Arsitektur](#1-overview--arsitektur)
 2. [CLI & Configuration Lifecycle](#2-cli--configuration-lifecycle)
@@ -147,8 +135,6 @@ root> configure
 root#
 ```
 
-> Jangan edit file config langsung dari UNIX Shell kecuali instruksi JTAC. Selalu pakai CLI agar validasi jalan.
-
 ### 2.2 Candidate vs Active
 
 | Istilah | Arti | Cara Lihat |
@@ -195,8 +181,6 @@ root# show system commit
 
 ## 3. Golden Baseline
 
-> Template awal untuk setiap device baru. Jangan deploy device tanpa bab ini.
-
 ### 3.1 Hostname & Time
 
 Naming: `<SITE>-<ROLE>-<NN>` — Contoh: `<SITE>-PE-01`. Konsisten di seluruh fleet.
@@ -208,7 +192,7 @@ set system time-zone <IANA-TIMEZONE>
 
 ### 3.2 Authentication
 
-> Gunakan `encrypted-password` atau SSH key. Jangan simpan password plaintext di Git / automation.
+Gunakan `encrypted-password` atau SSH key. Jangan simpan password plaintext di Git / automation.
 
 ```bash
 [edit system]
@@ -265,8 +249,6 @@ Verifikasi: `show ntp associations`, `show ntp status` — offset stabil, stratu
 
 ### 3.4 Management Services — Hardening
 
-> **Dilarang di produksi:** Telnet, FTP, HTTP plaintext, `xnm-clear-text`. Semua mengirim kredensial plaintext.
-
 ```bash
 [edit system services]
 set system services ssh root-login deny
@@ -284,8 +266,6 @@ set system services netconf ssh
 ```
 
 ### 3.5 SNMP — SNMPv3 Only
-
-> Jangan pakai community `public` / `private`. Standar produksi adalah SNMPv3 AuthPriv. Kredensial dari vault.
 
 ```bash
 [edit snmp]
@@ -691,8 +671,6 @@ set interfaces <CE-IF> encapsulation ethernet-vpls
 
 Verifikasi: `show vpls connections`, `show vpls mac-table`
 
-> Untuk greenfield, pertimbangkan **EVPN** sebagai pengganti VPLS. EVPN lebih scalable, mendukung active-active multihoming, dan merupakan standar saat ini. VPLS dipertahankan untuk kompatibilitas legacy.
-
 ### 10.4 L3VPN — VRF
 
 **Konsep:**
@@ -764,15 +742,11 @@ set interfaces lo0 unit 1 family inet address <SHAM-LOCAL>/32
 
 Verifikasi L3VPN: `show route table <VRF>.inet.0`, `show route forwarding-table vpn <VRF>`, `show bgp summary instance <VRF>`, `ping routing-instance <VRF> <DEST> source <SRC>`, `show ospf neighbor instance <VRF>`
 
-
----
-
 ---
 
 ## 11. Template Konfigurasi + Penjelasan
 
 > **Bab ini adalah kumpulan template siap pakai.** Setiap template terdiri dari: Tujuan → Kapan Dipakai → Template (`set` format) → Penjelasan Per Blok → Verifikasi → Kesalahan Umum.
-> **Semua nilai adalah placeholder.** Isi dari IPAM / vault sebelum load. Jangan load template mentah ke produksi.
 > **Cara pakai:** Copy template → ganti semua `<...>` → `show | compare` → `commit check` → `commit confirmed`.
 
 ### 11.1 Template A — Golden Baseline (System & Hardening)
@@ -1253,18 +1227,14 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 ### 11.11 Cara Pakai Template — Checklist
 
-1. **Copy template** → ganti semua `<...>` dari IPAM / vault.
-2. **Jangan copy-paste 10 template sekaligus.** Load per template, verifikasi per template.
-3. **`show | compare`** sebelum setiap `commit`.
-4. **`commit confirmed 5`** untuk perubahan remote.
-5. **Verifikasi** sesuai kolom Verifikasi di tiap template.
-6. **Simpan** config yang sudah terverifikasi sebagai Golden Config di repo.
+1. **Jangan copy-paste 10 template sekaligus.** Load per template, verifikasi per template.
+2. **`show | compare`** sebelum setiap `commit`.
+3. **`commit confirmed 5`** untuk perubahan remote.
+4. **Verifikasi** sesuai kolom Verifikasi di tiap template.
+5. **Simpan** config yang sudah terverifikasi sebagai Golden Config di repo.
 
 
 ## 12. Lab Topology — Abstract
-
-> **Tujuan bab ini:** Menunjukkan struktur lab, bukan mempublish addressing produksi.
-> **Alamat di bawah ini adalah placeholder / blok contoh.** Alokasi aktual dari IPAM internal. Jangan copy-paste ke produksi tanpa IPAM.
 
 ### 12.1 Prinsip Desain Lab
 
@@ -1306,56 +1276,10 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 | VPLS-ID | Harus identik di semua PE dalam 1 VPLS |
 | Sham-Link | Endpoint `lo0.1` di VRF, cost di-tune lebih murah dari backdoor jika MPLS adalah primary |
 
-### 12.4 Urutan Lab — Wajib Berurutan
-
-| Lab | Judul | Success Criteria |
-| :--- | :--- | :--- |
-| LAB 01 | Golden Baseline & Hardening | SSH OK, NTP sync |
-| LAB 02 | Interface & LACP | LACP Collecting + Distributing |
-| LAB 03 | OSPF + BFD | OSPF Full semua link |
-| LAB 04 | IS-IS (Alternatif) | IS-IS adjacency Up |
-| LAB 05 | MPLS + LDP + LLDP | LDP Operational |
-| LAB 06 | BGP Route Reflector | BGP Established ke 2 RR |
-| LAB 07 | Policy & Redistribution | Route sesuai filter |
-| LAB 08 | Firewall Filter | Prefix tidak sah ditolak |
-| LAB 09 | L2VPN | L2Circuit Up, CE-CE ping |
-| LAB 10 | VPLS | VPLS Up, MAC belajar, CE-CE ping |
-| LAB 11 | L3VPN Basic | VRF route ada, CE-CE ping |
-| LAB 12 | L3VPN AS-Override | Tanpa as-override: ditolak (AS-loop). Dengan: Established |
-| LAB 13 | L3VPN Sham-Link | OSPF neighbor via sham-link Full |
-| LAB 14 | Failure & Failover | Matikan 1 P → traffic via P lain |
-| LAB 15 | Backup / Rollback | Rollback berhasil ke baseline |
-
-**Urutan wajib:** LAB 01 → 03 → 05 → 06 → 09/10/11. Jangan lompat ke L2VPN/L3VPN sebelum IGP + LDP + BGP Established.
-
----
 
 ## 13. Config Library — Index
 
-> **File `.conf` adalah template.** Isi semua `<PLACEHOLDER>` dari IPAM / vault sebelum load. Jangan load template mentah ke produksi.
-
-### 13.1 Inventaris File
-
-| # | File | Role | Isi Utama |
-| :--- | :--- | :--- | :--- |
-| 1 | `Junos-PE-Golden-Config.conf` | PE Golden | Baseline PE: PROTECT-RE, SNMPv3, OSPF+BFD, BGP TO-RR, MPLS+LDP, VRF template |
-| 2 | `Junos-PE-Golden-Config-SET.txt` | PE Golden (SET) | Versi `set` dari file #1, untuk paste via terminal |
-| 3 | `Junos-P-01-Golden-Config.conf` | P Core | Core P, OSPF+BFD, MPLS+LDP+RSVP, Tanpa VRF, Tanpa BGP VPN |
-| 4 | `Junos-P-02-Golden-Config.conf` | P Core | Mirror P-01 |
-| 5 | `Junos-RR-01-Golden-Config.conf` | RR Primary | Cluster unik, BGP RR-CLIENTS → PE, RR-TO-RR → RR-02 |
-| 6 | `Junos-RR-02-Golden-Config.conf` | RR Backup | Cluster unik, mirror RR-01 |
-| 7 | `Junos-CE-A1-Config.conf` | CE L3VPN | PE-CE BGP, LAN di CE |
-| 8 | `Junos-CE-A2-Config.conf` | CE L3VPN | PE-CE BGP, AS sama untuk test AS-Override |
-| 9 | `Junos-CE-B1-Config.conf` | CE L2VPN | VLAN, L2 murni, Tanpa BGP/OSPF ke PE |
-| 10 | `Junos-CE-B2-Config.conf` | CE L2VPN | VLAN, mirror CE-B1 |
-| 11 | `Junos-CE-C1-Config.conf` | CE VPLS | VPLS, L2 multipoint |
-| 12 | `Junos-CE-C2-Config.conf` | CE VPLS | VPLS |
-| 13 | `Junos-CE-C3-Config.conf` | CE VPLS | VPLS |
-| 14 | `Junos-Lab-Topology-IP-Plan.md` / `.pdf` | Dokumen Lab | IP Plan — **Internal Only, bukan untuk README public** |
-| 15 | `Junos-OS-Professional-Guide.md` / `.pdf` | Guide ID | Guide lengkap Bahasa Indonesia — **Internal** |
-| 16 | `Junos-OS-Professional-Guide-EN.md` / `.pdf` | Guide EN | Guide English — **Customer-ready, tanpa nilai produksi** |
-
-### 13.2 Prinsip Per Role
+### 13.1 Prinsip Per Role
 
 **PE — Golden Config:** Setiap PE baru. Ganti `<HOSTNAME>`, `<LOOPBACK-IP>`, `<AS>`, `<MGMT-IP>`, `<NTP>`, `<SYSLOG>`, `<RR>`, semua kredensial dari vault.
 
@@ -1369,7 +1293,7 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 **CE — VPLS:** 1 switch virtual. Semua CE dalam 1 subnet yang sama. Broadcast ARP menyebar ke semua site.
 
-### 13.3 Cara Load
+### 13.2 Cara Load
 
 ```bash
 # Device baru — RECOMMENDED
@@ -1396,8 +1320,6 @@ show vpls connections      # Up
 show route table <VRF>.inet.0
 ping routing-instance <VRF> <DEST> source <SRC>
 ```
-
-**Checkpoint:** Setelah LAB 06 sukses (BGP Established), snapshot semua VM.
 
 ---
 
@@ -1627,29 +1549,6 @@ root# commit confirmed 5
 | AS-Override tidak jalan | CE AS beda, `as-override` tidak di PE | Pastikan CE AS sama untuk test |
 | Sham-Link tidak Full | `lo0.1` tidak di VRF, `sham-link-remote` salah | Cek `lo0.1` di VRF |
 
-### 15.3 Change Management Checklist
-
-**Pre-Change:**
-- [ ] Tiket / CR approved, maintenance window jelas
-- [ ] Config backup terbaru tersimpan
-- [ ] `show system commit` — tidak ada commit yang tidak dijelaskan
-- [ ] Rollback plan ditulis (rollback ke commit mana?)
-- [ ] `commit check` lolos
-- [ ] Peer / NOC diberitahu
-
-**During Change:**
-- [ ] Pakai `commit confirmed <5-10>` untuk perubahan remote
-- [ ] `show | compare` sebelum setiap commit
-- [ ] Test: `ping`, `show ospf neighbor`, `show bgp summary`, `show mpls lsp`, `show route table <VRF>`
-- [ ] Catat waktu & output verifikasi di tiket
-
-**Post-Change:**
-- [ ] `commit` final (konfirmasi `commit confirmed`)
-- [ ] Verifikasi 15 menit: tidak ada flap, alarm, atau error log
-- [ ] `show system commit` — commit comment benar
-- [ ] Update dokumentasi / diagram jika topologi berubah
-- [ ] Tutup tiket dengan bukti (before/after)
-
 ---
 
 ## Appendix A: Naming & Golden Rules
@@ -1712,10 +1611,6 @@ show route table <VRF>.inet.0
 show firewall filter <FILTER>
 show firewall counter
 ```
-
----
-
-> **Disclaimer:** Dokumen ini adalah panduan implementasi. Selalu validasi di lab / staging sebelum produksi dan ikuti change management organisasi kamu. Semua nilai di sini adalah placeholder — isi dari IPAM / vault resmi kamu. Jangan publish nilai produksi di README public.
 
 **© 2026 — Junos OS Implementation & Operations Guide v4.0 | Professional, Public-Safe**
 
