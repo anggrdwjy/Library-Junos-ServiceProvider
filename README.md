@@ -19,7 +19,6 @@
 * Setiap bab: `Prinsip → Konfigurasi (template) → Verifikasi → Best Practice`.
 * Perubahan remote wajib `commit confirmed`. Perubahan tanpa `show | compare` dilarang.
 
----
 
 ## Daftar Isi
 
@@ -92,7 +91,6 @@
   - [Golden Rules](#golden-rules)
 - [Appendix B: Quick Reference](#appendix-b-quick-reference)
 
----
 
 ## 1. Overview & Arsitektur
 
@@ -116,7 +114,6 @@ Junos OS adalah single OS di seluruh portfolio. CLI, commit model, dan troublesh
 | Security | SRX | Firewall, NAT, VPN |
 | Virtual | vMX, vSRX, vQFX | Lab, PoC, NFV |
 
----
 
 ## 2. CLI & Configuration Lifecycle
 
@@ -177,7 +174,6 @@ root# show system commit
 | `configure private` | Candidate privat per user |
 | `configure exclusive` | Lock device untuk perubahan kritis |
 
----
 
 ## 3. Golden Baseline
 
@@ -290,8 +286,6 @@ rename <old> to <new>        # Rename
 replace pattern <old> with <new>  # Hati-hati, selalu show | compare sesudahnya
 ```
 
----
-
 ## 4. Interface & LACP
 
 ### 4.1 Prinsip
@@ -342,8 +336,6 @@ set interfaces <MEMBER-2> gigether-options 802.3ad <AE-INTERFACE>
 
 Verifikasi: `show lacp interfaces <AE>` — Expected: Collecting + Distributing.
 
-
----
 
 ## 5. Routing: OSPF, IS-IS, Static
 
@@ -424,7 +416,6 @@ set protocols isis level 2 wide-metrics-only
 
 Verifikasi: `show isis adjacency`, `show isis interface`, `show isis database detail`, `show route protocol isis`
 
----
 
 ## 6. BGP & Route Reflector
 
@@ -473,7 +464,6 @@ set protocols bgp group <TO-RR-GROUP> neighbor <RR-LOOPBACK-2> description "<RR-
 
 Verifikasi: `show bgp summary` (Established), `show bgp neighbor <IP>`, `show route advertising-protocol bgp <IP>`, `show route receive-protocol bgp <IP>`
 
----
 
 ## 7. Policy Framework
 
@@ -515,7 +505,6 @@ set protocols <IGP-B> export <IGP-A-TO-B>
 
 > Jangan mutual-redistribute di 2 titik sekaligus tanpa tag / preference control. Pakai `tag` atau `preference` untuk membedakan route yang sudah di-redistribute.
 
----
 
 ## 8. Firewall Filter & RE Protection
 
@@ -579,7 +568,6 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 > Yang di-apply adalah **nama filter**, bukan nama term. Verifikasi: `show firewall filter <FILTER>`, `show firewall counter`, `show firewall log`
 
----
 
 ## 9. MPLS Core
 
@@ -612,7 +600,6 @@ Verifikasi: `show mpls interface`, `show mpls lsp`, `show ldp neighbor`, `show l
 | **RSVP-TE** | Butuh TE, explicit path, bandwidth guarantee, FRR |
 | **Segment Routing** | Modern, controller-based — roadmap |
 
----
 
 ## 10. MPLS Services: L2VPN, VPLS, L3VPN
 
@@ -742,7 +729,6 @@ set interfaces lo0 unit 1 family inet address <SHAM-LOCAL>/32
 
 Verifikasi L3VPN: `show route table <VRF>.inet.0`, `show route forwarding-table vpn <VRF>`, `show bgp summary instance <VRF>`, `ping routing-instance <VRF> <DEST> source <SRC>`, `show ospf neighbor instance <VRF>`
 
----
 
 ## 11. Template Konfigurasi + Penjelasan
 
@@ -805,7 +791,6 @@ set system services netconf ssh
 **Verifikasi:** `show system uptime`, `show ntp associations`, `show system login`, `show configuration system | display set`
 **Kesalahan umum:** Pakai password plaintext di Git, lupa `source-address` NTP, enable Telnet/FTP.
 
----
 
 ### 11.2 Template B — Interface + LACP
 
@@ -859,7 +844,6 @@ set interfaces <MEMBER-2> gigether-options 802.3ad <AE-IF>
 **Verifikasi:** `show interfaces terse`, `show lacp interfaces <AE-IF>`, `show interfaces <CORE-IF> extensive`
 **Kesalahan umum:** MTU di member beda dengan `aeX`, LACP `passive/passive`, VLAN di member bukan di `aeX`.
 
----
 
 ### 11.3 Template C — OSPF + BFD
 
@@ -898,7 +882,6 @@ set protocols ospf area <AREA-0> interface <CORE-IF>.0 bfd-liveness-detection fu
 **Verifikasi:** `show ospf neighbor` (Full), `show ospf interface`, `show bfd session`, `show route protocol ospf`
 **Kesalahan umum:** Hello/dead & auth beda antar neighbor, MTU beda, lupa `passive` di lo0, `metric` dikira MTU.
 
----
 
 ### 11.4 Template D — IS-IS
 
@@ -939,7 +922,6 @@ set protocols isis level 2 wide-metrics-only
 **Verifikasi:** `show isis adjacency` (Up), `show isis interface`, `show isis database detail`, `show route protocol isis`
 **Kesalahan umum:** Lupa `family iso`, NET salah format, `wide-metrics-only` tidak di-set, MTU beda.
 
----
 
 ### 11.5 Template E — BGP Route Reflector (RR + PE Client)
 
@@ -993,7 +975,6 @@ set protocols bgp group <TO-RR> neighbor <RR-LOOPBACK-2> description "<RR-2>"
 **Verifikasi:** `show bgp summary` (Established ke 2 RR), `show bgp group <GROUP>`, `show route advertising-protocol bgp <PE>`, `show route receive-protocol bgp <PE>`
 **Kesalahan umum:** Cluster-ID sama antar RR, key beda, hanya 1 RR, lupa `family inet-vpn`.
 
----
 
 ### 11.6 Template F — MPLS + LDP
 
@@ -1033,7 +1014,6 @@ set protocols lldp management-address <LOOPBACK-IP>
 **Verifikasi:** `show mpls interface`, `show mpls lsp`, `show ldp neighbor`, `show ldp session`, `show route forwarding-table family mpls`, `show lldp neighbors`
 **Kesalahan umum:** IGP belum Full tapi LDP dipaksa, lupa `family mpls` di interface, MTU tidak cukup untuk label overhead.
 
----
 
 ### 11.7 Template G — L3VPN VRF + PE-CE BGP (AS-Override)
 
@@ -1090,8 +1070,6 @@ set routing-instances <VRF> protocols bgp group <TO-CE> neighbor <CE-IP> export 
 **Verifikasi:** `show route table <VRF>.inet.0`, `show bgp summary instance <VRF>`, `ping routing-instance <VRF> <DEST> source <SRC>`
 **Kesalahan umum:** RD sama untuk 2 customer, RT salah, lupa `vrf-table-label`, `as-override` tidak di-set padahal CE AS sama.
 
----
-
 ### 11.8 Template H — L2VPN (L2Circuit)
 
 **Tujuan:** Hubungkan 2 site seolah 1 kabel (Point-to-Point L2).
@@ -1125,8 +1103,6 @@ set interfaces <CE-IF> unit <VLAN> vlan-id <VLAN-ID>
 
 **Verifikasi:** `show l2circuit connections` (Up), `show l2circuit connections extensive`, `ping mpls l2circuit virtual-circuit <VC-ID> neighbor <FAR-PE>`
 **Kesalahan umum:** VC-ID beda, VLAN beda, MTU beda, control-word beda — 4 penyebab Down paling sering.
-
----
 
 ### 11.9 Template I — VPLS
 
@@ -1165,7 +1141,6 @@ set interfaces <CE-IF> encapsulation ethernet-vpls
 **Verifikasi:** `show vpls connections` (Up), `show vpls mac-table` (MAC belajar)
 **Kesalahan umum:** VPLS-ID beda, lupa `ethernet-vpls`, tidak ada storm-control / MAC limit.
 
----
 
 ### 11.10 Template J — Firewall Filter & RE Protection
 
@@ -1222,8 +1197,6 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 **Verifikasi:** `show firewall filter <FILTER>`, `show firewall counter`, `show firewall log`
 **Kesalahan umum:** Lupa `source-address`, lupa `policer`, apply nama term bukan nama filter, lupa izinkan IGP/BGP sehingga IGP Down sendiri.
-
----
 
 ### 11.11 Cara Pakai Template — Checklist
 
@@ -1321,13 +1294,9 @@ show route table <VRF>.inet.0
 ping routing-instance <VRF> <DEST> source <SRC>
 ```
 
----
-
 ## 14. Studi Kasus Expert — Pola Desain
 
 > Bab ini berisi **pola desain & pola failure**, bukan post-mortem internal. Nama customer, skala, angka kerugian, dan detail kerentanan tidak dipublikasikan. Setiap kasus: `Konteks → Pola Failure → RCA (generik) → Desain Solusi → Verifikasi → Lesson`.
-
----
 
 ### 14.1 Migrasi IGP Core Tanpa Downtime
 
@@ -1349,7 +1318,6 @@ ping routing-instance <VRF> <DEST> source <SRC>
 * Ships-in-the-night lebih kompleks di config, tapi jauh lebih aman daripada flag-day.
 * Pilot subset wajib. Rollback plan harus per-router, bukan per-domain.
 
----
 
 ### 14.2 L3VPN Overlapping IP Antar Customer
 
@@ -1374,7 +1342,6 @@ show route protocol bgp table inet.6  # RD unik terlihat di VPNv4
 
 **Lesson:** RD = unik. RT = kebijakan. Test isolasi adalah bagian dari change, bukan opsional.
 
----
 
 ### 14.3 L2VPN Down Setelah Change MTU
 
@@ -1398,7 +1365,6 @@ show log messages | match l2circuit
 
 **Lesson:** MTU adalah silent killer L2VPN/VPLS. Cek kedua PE, bukan hanya 1 PE.
 
----
 
 ### 14.4 Route Reflector Redundancy
 
@@ -1422,7 +1388,6 @@ show route table <VRF>.inet.0 | count
 
 **Lesson:** Redundancy yang tidak pernah diuji = bukan redundancy. Test failover adalah bagian dari operasi rutin.
 
----
 
 ### 14.5 VPLS Broadcast Storm Karena Loop di CE
 
@@ -1444,7 +1409,6 @@ show firewall counter
 
 **Lesson:** VPLS = 1 broadcast domain = 1 failure domain. Storm-control & MAC limit harus di-set dari awal, bukan saat storm. Untuk customer besar, pertimbangkan EVPN atau L3VPN.
 
----
 
 ### 14.6 Sham-Link vs Backdoor Link
 
@@ -1473,8 +1437,6 @@ show route table <VRF>.inet.0        # Route via sham-link, bukan External
 
 **Lesson:** Sham-link bukan magic — ini cost engineering. Test failover sham-link wajib.
 
----
-
 ### 14.7 RE Protection di Bawah Serangan
 
 **Konteks:** Serangan ke loopback (RE) bisa membanjiri control plane dan membuat IGP/BGP flap, walau forwarding (PFE) masih jalan.
@@ -1500,8 +1462,6 @@ show route <LOOPBACK>          # Apakah loopback bocor ke eBGP?
 * RE protection harus punya `source-address` + `policer`, bukan hanya `accept`.
 * Monitoring counter DENY adalah early warning.
 * Loopback adalah identitas internal — jangan expose ke internet.
-
----
 
 ## 15. Operasi & Change Management
 
@@ -1549,7 +1509,6 @@ root# commit confirmed 5
 | AS-Override tidak jalan | CE AS beda, `as-override` tidak di PE | Pastikan CE AS sama untuk test |
 | Sham-Link tidak Full | `lo0.1` tidak di VRF, `sham-link-remote` salah | Cek `lo0.1` di VRF |
 
----
 
 ## Appendix A: Naming & Golden Rules
 
@@ -1579,7 +1538,6 @@ root# commit confirmed 5
 9. Backup sebelum change, verifikasi sesudah change.
 10. Jika ragu, `deactivate` dulu, jangan `delete`.
 
----
 
 ## Appendix B: Quick Reference
 
