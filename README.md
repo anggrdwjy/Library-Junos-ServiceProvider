@@ -1,5 +1,36 @@
 # Juniper Networks® Junos® OS — Implementation & Operations Guide
 
+> **README Utama | v4.0 — Professional Edition (Public-Safe)**
+> **Dokumen ini tidak berisi nilai produksi.** Semua IP, AS, password, hostname, dan nama customer diganti placeholder.
+> **Nilai aktual hanya di IPAM / vault internal. Jangan publish nilai produksi di README.**
+
+| Atribut | Detail |
+| :--- | :--- |
+| **Versi** | **v4.0 — Professional, Public-Safe** |
+| **Tanggal** | 18 November 2026 |
+| **Menggantikan** | v3.0 (terlalu detail, over-exposed — di-retire) |
+| **Berlaku untuk** | Junos OS / Junos OS Evolved |
+| **Platform** | MX, PTX, ACX, EX, QFX, SRX, vMX / vSRX / vQFX |
+| **Audiens** | Network Engineer, NOC, Architect, Pre-Sales |
+| **Klasifikasi** | **PUBLIC-SAFE** — Aman dibagikan ke customer / partner / GitHub |
+| **Sumber Kebenaran** | File `.conf` di repo ini + IPAM / vault internal |
+
+### Prinsip Dokumen Ini
+
+1. **Placeholder, bukan nilai nyata.** Format: `<PLACEHOLDER>`. Contoh: `<PE-LOOPBACK>`, `<NTP-SERVER-1>`, `<RR-CLUSTER-ID>`.
+2. **Lab = contoh, bukan produksi.** Alamat lab di Bab 11 memakai blok dokumentasi / placeholder. Jangan samakan dengan produksi.
+3. **Satu sumber kebenaran.** README menjelaskan pola & prosedur. File `.conf` adalah template yang harus diisi dari IPAM sebelum load.
+4. **No customer, no incident leak.** Studi kasus di Bab 13 ditulis sebagai pola desain, bukan post-mortem internal.
+
+### Konvensi
+
+* `<>` = wajib diganti dari IPAM / vault. `[]` = opsional.
+* `root>` = Operational Mode. `root#` = Configuration Mode. Jangan ketik prompt-nya.
+* Setiap bab: `Prinsip → Konfigurasi (template) → Verifikasi → Best Practice`.
+* Perubahan remote wajib `commit confirmed`. Perubahan tanpa `show | compare` dilarang.
+
+---
+
 ## Daftar Isi
 
 > Daftar isi disusun mengikuti standar penulisan dokumen teknis: penomoran berjenjang (Bab — Subbab), judul sesuai heading, dan urutan sesuai isi dokumen.
@@ -1520,6 +1551,7 @@ show route table <VRF>.inet.0        # Route via sham-link, bukan External
 
 **Lesson:** Sham-link bukan magic — ini cost engineering. Test failover sham-link wajib.
 
+---
 
 ### 14.7 RE Protection di Bawah Serangan
 
@@ -1547,6 +1579,7 @@ show route <LOOPBACK>          # Apakah loopback bocor ke eBGP?
 * Monitoring counter DENY adalah early warning.
 * Loopback adalah identitas internal — jangan expose ke internet.
 
+---
 
 ## 15. Operasi & Change Management
 
@@ -1570,6 +1603,8 @@ root# show | compare
 root# commit confirmed 5
 ```
 
+**Automated Backup:** Pakai `system archival configuration transfer-on-commit` + `archive-sites` dari vault. Jangan hardcode kredensial di README.
+
 ### 15.2 Troubleshooting Framework
 
 1. **Apa yang berubah?** — `show system commit`, `show | compare`
@@ -1592,6 +1627,30 @@ root# commit confirmed 5
 | AS-Override tidak jalan | CE AS beda, `as-override` tidak di PE | Pastikan CE AS sama untuk test |
 | Sham-Link tidak Full | `lo0.1` tidak di VRF, `sham-link-remote` salah | Cek `lo0.1` di VRF |
 
+### 15.3 Change Management Checklist
+
+**Pre-Change:**
+- [ ] Tiket / CR approved, maintenance window jelas
+- [ ] Config backup terbaru tersimpan
+- [ ] `show system commit` — tidak ada commit yang tidak dijelaskan
+- [ ] Rollback plan ditulis (rollback ke commit mana?)
+- [ ] `commit check` lolos
+- [ ] Peer / NOC diberitahu
+
+**During Change:**
+- [ ] Pakai `commit confirmed <5-10>` untuk perubahan remote
+- [ ] `show | compare` sebelum setiap commit
+- [ ] Test: `ping`, `show ospf neighbor`, `show bgp summary`, `show mpls lsp`, `show route table <VRF>`
+- [ ] Catat waktu & output verifikasi di tiket
+
+**Post-Change:**
+- [ ] `commit` final (konfirmasi `commit confirmed`)
+- [ ] Verifikasi 15 menit: tidak ada flap, alarm, atau error log
+- [ ] `show system commit` — commit comment benar
+- [ ] Update dokumentasi / diagram jika topologi berubah
+- [ ] Tutup tiket dengan bukti (before/after)
+
+---
 
 ## Appendix A: Naming & Golden Rules
 
@@ -1621,6 +1680,7 @@ root# commit confirmed 5
 9. Backup sebelum change, verifikasi sesudah change.
 10. Jika ragu, `deactivate` dulu, jangan `delete`.
 
+---
 
 ## Appendix B: Quick Reference
 
@@ -1652,6 +1712,10 @@ show route table <VRF>.inet.0
 show firewall filter <FILTER>
 show firewall counter
 ```
+
+---
+
+> **Disclaimer:** Dokumen ini adalah panduan implementasi. Selalu validasi di lab / staging sebelum produksi dan ikuti change management organisasi kamu. Semua nilai di sini adalah placeholder — isi dari IPAM / vault resmi kamu. Jangan publish nilai produksi di README public.
 
 **© 2026 — Junos OS Implementation & Operations Guide v4.0 | Professional, Public-Safe**
 
