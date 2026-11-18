@@ -6,13 +6,6 @@
 | **Platform** | MX, PTX, ACX, EX, QFX, SRX, vMX / vSRX / vQFX |
 | **Audiens** | Network Engineer, NOC, Architect, Pre-Sales |
 
-### Prinsip Dokumen Ini
-
-1. **Placeholder, bukan nilai nyata.** Format: `<PLACEHOLDER>`. Contoh: `<PE-LOOPBACK>`, `<NTP-SERVER-1>`, `<RR-CLUSTER-ID>`.
-2. **Lab = contoh, bukan produksi.** Alamat lab di Bab 11 memakai blok dokumentasi / placeholder. Jangan samakan dengan produksi.
-3. **Satu sumber kebenaran.** README menjelaskan pola & prosedur. File `.conf` adalah template yang harus diisi dari IPAM sebelum load.
-4. **No customer, no incident leak.** Studi kasus di Bab 13 ditulis sebagai pola desain, bukan post-mortem internal.
-
 ### Konvensi
 
 * `root>` = Operational Mode. `root#` = Configuration Mode. Jangan ketik prompt-nya.
