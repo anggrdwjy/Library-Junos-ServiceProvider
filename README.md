@@ -2,14 +2,13 @@
 
 | Atribut | Detail |
 | :--- | :--- |
-| **Berlaku untuk** | Junos OS / Junos OS Evolved |
+| **Sistem Operasi** | Junos OS / Junos OS Evolved |
 | **Platform** | MX, PTX, ACX, EX, QFX, SRX, vMX / vSRX / vQFX |
 | **Audiens** | Network Engineer, NOC, Architect, Pre-Sales |
 
 ### Konvensi
 
-* `root>` = Operational Mode. `root#` = Configuration Mode. Jangan ketik prompt-nya.
-* Setiap bab: `Prinsip → Konfigurasi (template) → Verifikasi → Best Practice`.
+* `root>` = Operational Mode. `root#` = Configuration Mode.
 * Perubahan remote wajib `commit confirmed`. Perubahan tanpa `show | compare` dilarang.
 
 
@@ -87,7 +86,7 @@
 
 ## 1. Overview & Arsitektur
 
-Junos OS adalah single OS di seluruh portfolio. CLI, commit model, dan troubleshooting yang berlaku di EX/QFX berlaku identik di MX/PTX/SRX. Ini mengurangi learning curve dan risiko human error.
+Junos OS adalah single OS di seluruh platform Juniper. CLI, commit model, dan troubleshooting yang berlaku di EX/QFX berlaku identik di MX/PTX/SRX dan mengurangi risiko human error.
 
 | Komponen | Fungsi |
 | :--- | :--- |
@@ -97,7 +96,7 @@ Junos OS adalah single OS di seluruh portfolio. CLI, commit model, dan troublesh
 
 **Implikasi desain:**
 * PFE tetap forwarding saat RE sibuk / restart (dengan Graceful Restart / NSR).
-* Konfigurasi deklaratif. Urutan `set` tidak mengubah hasil akhir.
+* Konfigurasi deklaratif `set` tidak mengubah hasil akhir.
 * Commit bersifat atomik — aktif hanya setelah validasi lolos.
 
 | Kategori | Series | Peran Umum |
@@ -132,7 +131,7 @@ root#
 | **Candidate** | Draft yang sedang diedit. Belum aktif. | `root# show` |
 | **Active** | Konfigurasi yang sedang jalan. | `root> show configuration` |
 
-**SOP Commit (Wajib):**
+**SOP Commit (Wajib) :**
 
 ```bash
 root> configure
@@ -172,7 +171,7 @@ root# show system commit
 
 ### 3.1 Hostname & Time
 
-Naming: `<SITE>-<ROLE>-<NN>` — Contoh: `<SITE>-PE-01`. Konsisten di seluruh fleet.
+Naming: `<SITE>-<ROLE>-<NN>` — Contoh: `<SITE>-PE-01`.
 
 ```bash
 set system host-name <HOSTNAME>
@@ -202,14 +201,14 @@ set system login idle-timeout 10
 
 | Built-in Class | Akses |
 | :--- | :--- |
-| `super-user` | Penuh |
+| `super-user` | Full |
 | `operator` | Clear, network, reset, trace, view (tanpa `configure`) |
 | `read-only` | View only |
 | `unauthorized` | No access |
 
 ### 3.3 NTP, DNS, Syslog
 
-NTP wajib — tanpa sinkronisasi waktu, log antar device tidak bisa dikorelasikan.
+NTP wajib — tanpa sinkronisasi waktu, log antar device tidak bisa valid.
 
 ```bash
 [edit system ntp]
@@ -285,7 +284,7 @@ replace pattern <old> with <new>  # Hati-hati, selalu show | compare sesudahnya
 
 * Setiap interface wajib punya `description`: `to <NEIGHBOR> <PORT> | <CIRCUIT-ID> | <BW>`
 * Loopback (`lo0`) adalah identitas device: Router-ID, BGP local-address, LDP endpoint, NTP/SNMP source. Jangan pakai IP fisik untuk ini.
-* MTU harus konsisten end-to-end. Mismatch = adjacency flap, MPLS drop diam-diam.
+* MTU harus konsisten end-to-end. Mismatch = adjacency flap, MPLS drop.
 
 ```bash
 [edit interfaces]
@@ -353,7 +352,7 @@ set routing-options static route <PREFIX> next-hop <NEXT-HOP> preference 5
 
 ### 5.2 OSPF
 
-**Aturan desain:**
+**Role OSPF desain:**
 * Area 0 (Backbone) wajib & kontigu.
 * Loopback di Area 0 sebagai Router-ID stabil.
 * P2P untuk link point-to-point. Passive untuk loopback & interface ke user.
@@ -518,7 +517,7 @@ set protocols <IGP-B> export <IGP-A-TO-B>
 
 ### 8.2 Loopback Protection (RE Protection) — Template Wajib
 
-> Filter ini melindungi Routing Engine. Apply ke `lo0`. Hanya izinkan traffic yang dibutuhkan ke RE, dari source yang sah, dengan rate-limit.
+Filter ini melindungi Routing Engine. Apply ke `lo0`. Hanya izinkan traffic yang dibutuhkan ke RE, dari source yang sah, dengan rate-limit.
 
 ```bash
 [edit firewall]
@@ -1188,15 +1187,6 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 **Verifikasi:** `show firewall filter <FILTER>`, `show firewall counter`, `show firewall log`
 **Kesalahan umum:** Lupa `source-address`, lupa `policer`, apply nama term bukan nama filter, lupa izinkan IGP/BGP sehingga IGP Down sendiri.
 
-### 11.11 Cara Pakai Template — Checklist
-
-1. **Jangan copy-paste 10 template sekaligus.** Load per template, verifikasi per template.
-2. **`show | compare`** sebelum setiap `commit`.
-3. **`commit confirmed 5`** untuk perubahan remote.
-4. **Verifikasi** sesuai kolom Verifikasi di tiap template.
-5. **Simpan** config yang sudah terverifikasi sebagai Golden Config di repo.
-
-
 ## 12. Lab Topology — Abstract
 
 ### 12.1 Prinsip Desain Lab
@@ -1427,7 +1417,7 @@ show route table <VRF>.inet.0        # Route via sham-link, bukan External
 
 **Lesson:** Sham-link bukan magic — ini cost engineering. Test failover sham-link wajib.
 
-### 14.7 RE Protection di Bawah Serangan
+### 14.7 RE Protection di Bawah Serangan Attacker
 
 **Konteks:** Serangan ke loopback (RE) bisa membanjiri control plane dan membuat IGP/BGP flap, walau forwarding (PFE) masih jalan.
 
@@ -1474,8 +1464,6 @@ root# load merge /var/tmp/<PARTIAL>.conf
 root# show | compare
 root# commit confirmed 5
 ```
-
-**Automated Backup:** Pakai `system archival configuration transfer-on-commit` + `archive-sites` dari vault. Jangan hardcode kredensial di README.
 
 ### 15.2 Troubleshooting Framework
 
