@@ -1,41 +1,73 @@
 # Juniper Networks® Junos® OS — Implementation & Operations Guide
 
+> **README Utama | v5.1 — Professional Expert Edition (Public-Safe)**
+> **Dokumen ini tidak berisi nilai produksi.** Semua IP, AS, password, hostname, dan nama customer diganti placeholder.
+> **Nilai aktual hanya di IPAM / vault internal. Jangan publish nilai produksi di README.**
+
 | Atribut | Detail |
 | :--- | :--- |
-| **Sistem Operasi** | Junos OS / Junos OS Evolved |
+| **Versi** | **v5.1 — Professional Expert Edition (Public-Safe)** |
+| **Tanggal** | 20 November 2026 |
+| **Menggantikan** | v5.0 (Urutan bab belum sesuai guidelines) |
+| **Berlaku untuk** | Junos OS / Junos OS Evolved |
 | **Platform** | MX, PTX, ACX, EX, QFX, SRX, vMX / vSRX / vQFX |
 | **Audiens** | Network Engineer, NOC, Architect, Pre-Sales |
+| **Klasifikasi** | **PUBLIC-SAFE** — Aman dibagikan ke customer / partner / GitHub |
+| **Sumber Kebenaran** | File `.conf` di repo ini + IPAM / vault internal |
+
+### Prinsip Dokumen Ini
+
+1. **Placeholder, bukan nilai nyata.** Format: `<PLACEHOLDER>`. Contoh: `<PE-LOOPBACK>`, `<NTP-SERVER-1>`, `<RR-CLUSTER-ID>`.
+2. **Lab = contoh, bukan produksi.** Alamat lab di Bab 17 memakai blok dokumentasi / placeholder. Jangan samakan dengan produksi.
+3. **Satu sumber kebenaran.** README menjelaskan pola & prosedur. File `.conf` adalah template yang harus diisi dari IPAM sebelum load.
+4. **No customer, no incident leak.** Studi kasus di Bab 21 ditulis sebagai pola desain, bukan post-mortem internal.
 
 ### Konvensi
 
-* `root>` = Operational Mode. `root#` = Configuration Mode.
+* `<>` = wajib diganti dari IPAM / vault. `[]` = opsional.
+* `root>` = Operational Mode. `root#` = Configuration Mode. Jangan ketik prompt-nya.
+* Struktur: Bagian I Pendahuluan → Bagian II Desain Core → Bagian III Implementasi → Bagian IV Operasi.
+* Setiap bab: `Prinsip → Konfigurasi (template) → Verifikasi → Best Practice`.
 * Perubahan remote wajib `commit confirmed`. Perubahan tanpa `show | compare` dilarang.
 
+---
 
 ## Daftar Isi
 
-1. [Overview & Arsitektur](#1-overview--arsitektur)
-2. [CLI & Configuration Lifecycle](#2-cli--configuration-lifecycle)
-3. [Golden Baseline](#3-golden-baseline)
-4. [Interface & LACP](#4-interface--lacp)
-5. [Routing: OSPF, IS-IS, Static](#5-routing-ospf-is-is-static)
-6. [BGP & Route Reflector](#6-bgp--route-reflector)
-7. [Policy Framework](#7-policy-framework)
-8. [Firewall Filter & RE Protection](#8-firewall-filter--re-protection)
-9. [MPLS Core](#9-mpls-core)
-10. [MPLS Services: L2VPN, VPLS, L3VPN](#10-mpls-services-l2vpn-vpls-l3vpn)
-11. [Template Konfigurasi + Penjelasan](#11-template-konfigurasi--penjelasan)
-12. [Lab Topology — Abstract](#12-lab-topology--abstract)
-13. [Config Library — Index](#13-config-library--index)
-14. [Studi Kasus Expert — Pola Desain](#14-studi-kasus-expert--pola-desain)
-15. [Operasi & Change Management](#15-operasi--change-management)
+> Daftar isi disusun mengikuti standar penulisan dokumen teknis: penomoran berjenjang (Bab — Subbab), judul sesuai heading, dan urutan sesuai isi dokumen — Bagian I Pendahuluan → Bagian II Desain Core → Bagian III Implementasi → Bagian IV Operasi.
+
+1. [Overview & Arsitektur](#1-overview-arsitektur)
+2. [CLI & Configuration Lifecycle](#2-cli-configuration-lifecycle)
+3. [Design Decision & Trade-off Framework](#3-design-decision-trade-off-framework)
+4. [Golden Baseline](#4-golden-baseline)
+5. [Interface & LACP](#5-interface-lacp)
+6. [Routing: OSPF, IS-IS, Static](#6-routing-ospf-is-is-static)
+7. [BGP & Route Reflector](#7-bgp-route-reflector)
+8. [Policy Framework](#8-policy-framework)
+9. [Firewall Filter & RE Protection](#9-firewall-filter-re-protection)
+10. [MPLS Core](#10-mpls-core)
+11. [MPLS Services: L2VPN, VPLS, L3VPN](#11-mpls-services-l2vpn-vpls-l3vpn)
+12. [EVPN-VXLAN & Migrasi VPLS → EVPN](#12-evpn-vxlan-migrasi-vpls-evpn)
+13. [QoS / CoS — Classification, Policer, Scheduler](#13-qos-cos-classification-policer-scheduler)
+14. [High Availability & Convergence](#14-high-availability-convergence)
+15. [Security Expert: RPKI, RTBH, BGP Flowspec](#15-security-expert-rpki-rtbh-bgp-flowspec)
+16. [Template Konfigurasi + Penjelasan](#16-template-konfigurasi-penjelasan)
+17. [Lab Topology — Abstract](#17-lab-topology-abstract)
+18. [Config Library — Index](#18-config-library-index)
+19. [Operasi & Change Management](#19-operasi-change-management)
+20. [Troubleshooting Expert: Packet Walk + Traceoptions](#20-troubleshooting-expert-packet-walk-traceoptions)
+21. [Studi Kasus Expert — Pola Desain](#21-studi-kasus-expert-pola-desain)
 - [Appendix A: Naming & Golden Rules](#appendix-a-naming--golden-rules)
 - [Appendix B: Quick Reference](#appendix-b-quick-reference)
 
+---
+---
+
+## Bagian I — Pendahuluan & Prinsip Desain
 
 ## 1. Overview & Arsitektur
 
-Junos OS adalah single OS di seluruh platform Juniper. CLI, commit model, dan troubleshooting yang berlaku di EX/QFX berlaku identik di MX/PTX/SRX dan mengurangi risiko human error.
+Junos OS adalah single OS di seluruh portfolio. CLI, commit model, dan troubleshooting yang berlaku di EX/QFX berlaku identik di MX/PTX/SRX. Ini mengurangi learning curve dan risiko human error.
 
 | Komponen | Fungsi |
 | :--- | :--- |
@@ -45,7 +77,7 @@ Junos OS adalah single OS di seluruh platform Juniper. CLI, commit model, dan tr
 
 **Implikasi desain:**
 * PFE tetap forwarding saat RE sibuk / restart (dengan Graceful Restart / NSR).
-* Konfigurasi deklaratif `set` tidak mengubah hasil akhir.
+* Konfigurasi deklaratif. Urutan `set` tidak mengubah hasil akhir.
 * Commit bersifat atomik — aktif hanya setelah validasi lolos.
 
 | Kategori | Series | Peran Umum |
@@ -55,6 +87,7 @@ Junos OS adalah single OS di seluruh platform Juniper. CLI, commit model, dan tr
 | Security | SRX | Firewall, NAT, VPN |
 | Virtual | vMX, vSRX, vQFX | Lab, PoC, NFV |
 
+---
 
 ## 2. CLI & Configuration Lifecycle
 
@@ -73,6 +106,8 @@ root> configure
 root#
 ```
 
+> Jangan edit file config langsung dari UNIX Shell kecuali instruksi JTAC. Selalu pakai CLI agar validasi jalan.
+
 ### 2.2 Candidate vs Active
 
 | Istilah | Arti | Cara Lihat |
@@ -80,7 +115,7 @@ root#
 | **Candidate** | Draft yang sedang diedit. Belum aktif. | `root# show` |
 | **Active** | Konfigurasi yang sedang jalan. | `root> show configuration` |
 
-**SOP Commit (Wajib) :**
+**SOP Commit (Wajib):**
 
 ```bash
 root> configure
@@ -115,21 +150,87 @@ root# show system commit
 | `configure private` | Candidate privat per user |
 | `configure exclusive` | Lock device untuk perubahan kritis |
 
+---
 
-## 3. Golden Baseline
+## 3. Design Decision & Trade-off Framework
 
-### 3.1 Hostname & Time
+> **Kenapa bab ini ada:** Ini yang paling membedakan engineer senior dari junior. Junior bisa config. Senior bisa jelaskan *kenapa* pilih config ini, bukan config lain, dan apa risikonya. Bab ini adalah template untuk setiap design decision di README.
 
-Naming: `<SITE>-<ROLE>-<NN>` — Contoh: `<SITE>-PE-01`.
+### 3.1 Template Design Decision
+
+Gunakan template ini untuk setiap keputusan desain di dokumen / design review / customer proposal:
+
+```markdown
+### Decision: <Judul Keputusan>
+**Konteks:** <Masalah / requirement>
+**Pilihan yang Dipertimbangkan:**
+| Pilihan | Kelebihan | Kekurangan | Biaya / Risiko |
+| :--- | :--- | :--- | :--- |
+| A. <Pilihan A> | ... | ... | ... |
+| B. <Pilihan B> | ... | ... | ... |
+**Keputusan:** <Pilihan yang dipilih>
+**Alasan:** <Kenapa pilih ini, bukan yang lain>
+**Trade-off yang Diterima:** <Apa yang dikorbankan>
+**Failure Mode:** <Jika ini gagal, apa yang terjadi? Bagaimana mitigasinya?>
+**Rollback:** <Bagaimana kembali ke desain lama?>
+```
+
+### 3.2 Contoh Design Decision (Dari README Ini)
+
+**Decision: LDP vs RSVP-TE**
+
+| Pilihan | Kelebihan | Kekurangan |
+| :--- | :--- | :--- |
+| A. LDP | Sederhana, otomatis, cukup untuk L2VPN/VPLS/L3VPN | Tanpa TE, tanpa bandwidth guarantee |
+| B. RSVP-TE | TE, explicit path, FRR <50ms | Kompleks, state per LSP, butuh planning |
+| **Keputusan:** LDP untuk lab & core standar, RSVP-TE hanya jika ada requirement TE / FRR ketat | | |
+| **Trade-off:** Kehilangan TE, tapi dapat simplicity & operational cost rendah | | |
+| **Failure Mode:** Jika butuh TE di masa depan, migrasi LDP → RSVP-TE perlu maintenance window | | |
+
+**Decision: OSPF vs IS-IS**
+
+| Pilihan | Kelebihan | Kekurangan |
+| :--- | :--- | :--- |
+| A. OSPF | Familiar, mudah troubleshooting, bagus untuk enterprise | LSDB membesar, SPF sering saat skala besar |
+| B. IS-IS | Scaling lebih baik, TLV extensible, roadmap SR-MPLS | Kurang familiar untuk tim enterprise, NET addressing perlu IPAM |
+| **Keputusan:** OSPF untuk enterprise, IS-IS untuk ISP core besar / roadmap SR | | |
+
+**Decision: VPLS vs EVPN**
+
+| Pilihan | Kelebihan | Kekurangan |
+| :--- | :--- | :--- |
+| A. VPLS | Legacy, familiar, cukup untuk 3-5 site | Broadcast storm, scaling buruk, single-active |
+| B. EVPN | Control-plane MAC, active-active, scaling baik | Kompleks, butuh BGP EVPN, butuh training |
+| **Keputusan:** EVPN untuk greenfield, VPLS untuk legacy + migrasi bertahap | | |
+
+**Decision: Dual RR vs Full-Mesh iBGP**
+
+| Pilihan | Kelebihan | Kekurangan |
+| :--- | :--- | :--- |
+| A. Full-Mesh | Tanpa RR, tanpa single point | Session n*(n-1)/2, tidak scalable >10 PE |
+| B. Dual RR | Scalable, PE hanya 2 session | RR adalah critical, butuh failover test |
+| **Keputusan:** Dual RR untuk >5 PE, Full-Mesh hanya untuk lab kecil | | |
+
+**Cara pakai:** Setiap kali ada design review, isi template ini. Jangan hanya presentasikan config, presentasikan decision + trade-off + failure mode. Itu yang dinilai principal & auditor.
+
+---
+
+## 4. Golden Baseline
+
+> Template awal untuk setiap device baru. Jangan deploy device tanpa bab ini.
+
+### 4.1 Hostname & Time
+
+Naming: `<SITE>-<ROLE>-<NN>` — Contoh: `<SITE>-PE-01`. Konsisten di seluruh fleet.
 
 ```bash
 set system host-name <HOSTNAME>
 set system time-zone <IANA-TIMEZONE>
 ```
 
-### 3.2 Authentication
+### 4.2 Authentication
 
-Gunakan `encrypted-password` atau SSH key. Jangan simpan password plaintext di Git / automation.
+> Gunakan `encrypted-password` atau SSH key. Jangan simpan password plaintext di Git / automation.
 
 ```bash
 [edit system]
@@ -150,14 +251,14 @@ set system login idle-timeout 10
 
 | Built-in Class | Akses |
 | :--- | :--- |
-| `super-user` | Full |
+| `super-user` | Penuh |
 | `operator` | Clear, network, reset, trace, view (tanpa `configure`) |
 | `read-only` | View only |
 | `unauthorized` | No access |
 
-### 3.3 NTP, DNS, Syslog
+### 4.3 NTP, DNS, Syslog
 
-NTP wajib — tanpa sinkronisasi waktu, log antar device tidak bisa valid.
+NTP wajib — tanpa sinkronisasi waktu, log antar device tidak bisa dikorelasikan.
 
 ```bash
 [edit system ntp]
@@ -184,7 +285,9 @@ set system syslog archive size 10m files 10
 
 Verifikasi: `show ntp associations`, `show ntp status` — offset stabil, stratum stabil.
 
-### 3.4 Management Services — Hardening
+### 4.4 Management Services — Hardening
+
+> **Dilarang di produksi:** Telnet, FTP, HTTP plaintext, `xnm-clear-text`. Semua mengirim kredensial plaintext.
 
 ```bash
 [edit system services]
@@ -202,7 +305,9 @@ set system services ssh rate-limit 5
 set system services netconf ssh
 ```
 
-### 3.5 SNMP — SNMPv3 Only
+### 4.5 SNMP — SNMPv3 Only
+
+> Jangan pakai community `public` / `private`. Standar produksi adalah SNMPv3 AuthPriv. Kredensial dari vault.
 
 ```bash
 [edit snmp]
@@ -217,7 +322,7 @@ set snmp v3 vacm access group <RO-GROUP> default-context-prefix security-model u
 set snmp v3 vacm view <VIEW> oid .1 include
 ```
 
-### 3.6 Deactivate / Delete
+### 4.6 Deactivate / Delete
 
 ```bash
 delete <hierarchy>           # Hapus permanen dari candidate
@@ -227,13 +332,19 @@ rename <old> to <new>        # Rename
 replace pattern <old> with <new>  # Hati-hati, selalu show | compare sesudahnya
 ```
 
-## 4. Interface & LACP
+---
 
-### 4.1 Prinsip
+---
+
+## Bagian II — Desain Jaringan Core
+
+## 5. Interface & LACP
+
+### 5.1 Prinsip
 
 * Setiap interface wajib punya `description`: `to <NEIGHBOR> <PORT> | <CIRCUIT-ID> | <BW>`
 * Loopback (`lo0`) adalah identitas device: Router-ID, BGP local-address, LDP endpoint, NTP/SNMP source. Jangan pakai IP fisik untuk ini.
-* MTU harus konsisten end-to-end. Mismatch = adjacency flap, MPLS drop.
+* MTU harus konsisten end-to-end. Mismatch = adjacency flap, MPLS drop diam-diam.
 
 ```bash
 [edit interfaces]
@@ -250,7 +361,7 @@ set interfaces <CORE-INTERFACE> unit 0 family iso
 
 Verifikasi: `show interfaces terse`, `show interfaces <IF> extensive`, `ping <P2P-NEIGHBOR> count 5`
 
-### 4.2 LACP (802.3ad)
+### 5.2 LACP (802.3ad)
 
 Pakai LACP `active` di kedua sisi (atau active/passive). Jangan `passive/passive` — LAG tidak terbentuk. MTU & VLAN di `aeX`, bukan di member.
 
@@ -278,9 +389,11 @@ set interfaces <MEMBER-2> gigether-options 802.3ad <AE-INTERFACE>
 Verifikasi: `show lacp interfaces <AE>` — Expected: Collecting + Distributing.
 
 
-## 5. Routing: OSPF, IS-IS, Static
+---
 
-### 5.1 Static
+## 6. Routing: OSPF, IS-IS, Static
+
+### 6.1 Static
 
 Pakai static hanya untuk default route di edge, stub, atau management. Jangan bangun core dengan static.
 
@@ -299,9 +412,9 @@ set routing-options static route <PREFIX> next-hop <NEXT-HOP> preference 5
 | IS-IS L2 Internal | 18 |
 | BGP Internal / External | 170 |
 
-### 5.2 OSPF
+### 6.2 OSPF
 
-**Role OSPF desain:**
+**Aturan desain:**
 * Area 0 (Backbone) wajib & kontigu.
 * Loopback di Area 0 sebagai Router-ID stabil.
 * P2P untuk link point-to-point. Passive untuk loopback & interface ke user.
@@ -328,9 +441,9 @@ set protocols ospf traffic-engineering
 
 Verifikasi: `show ospf neighbor` (Full), `show ospf interface`, `show ospf route`, `show bfd session`
 
-**Troubleshooting checklist:** IP/mask identik, MTU identik, Area ID identik, Router-ID unik, hello/dead & auth identik, firewall tidak blokir multicast OSPF.
+**Troubleshooting:** IP/mask identik, MTU identik, Area ID identik, Router-ID unik, hello/dead & auth identik, firewall tidak blokir multicast OSPF.
 
-### 5.3 IS-IS
+### 6.3 IS-IS
 
 IS-IS dipilih untuk core besar karena TLV extensible, adjacency tidak terikat IP (CLNS), dan scaling lebih baik.
 
@@ -357,16 +470,17 @@ set protocols isis level 2 wide-metrics-only
 
 Verifikasi: `show isis adjacency`, `show isis interface`, `show isis database detail`, `show route protocol isis`
 
+---
 
-## 6. BGP & Route Reflector
+## 7. BGP & Route Reflector
 
-### 6.1 Prinsip
+### 7.1 Prinsip
 
 * iBGP butuh full-mesh atau Route Reflector. Tanpa itu, iBGP tidak advertise route iBGP ke iBGP lain (split-horizon).
 * eBGP butuh `export` policy eksplisit — default Junos: eBGP tidak export apapun tanpa policy.
 * Loopback sebagai `local-address` + `router-id` = session stabil.
 
-### 6.2 Route Reflector — Desain
+### 7.2 Route Reflector — Desain
 
 Client hanya peering ke RR (1-2 session), bukan ke semua PE. RR merefleksikan route antar client. **Deploy 2 RR** untuk redundansi. Client peering ke keduanya.
 
@@ -405,8 +519,9 @@ set protocols bgp group <TO-RR-GROUP> neighbor <RR-LOOPBACK-2> description "<RR-
 
 Verifikasi: `show bgp summary` (Established), `show bgp neighbor <IP>`, `show route advertising-protocol bgp <IP>`, `show route receive-protocol bgp <IP>`
 
+---
 
-## 7. Policy Framework
+## 8. Policy Framework
 
 Policy Junos adalah daftar term berurutan `from → then`. Evaluasi dari atas ke bawah, berhenti di term pertama yang match. Jika tidak ada yang match → default action.
 
@@ -446,10 +561,11 @@ set protocols <IGP-B> export <IGP-A-TO-B>
 
 > Jangan mutual-redistribute di 2 titik sekaligus tanpa tag / preference control. Pakai `tag` atau `preference` untuk membedakan route yang sudah di-redistribute.
 
+---
 
-## 8. Firewall Filter & RE Protection
+## 9. Firewall Filter & RE Protection
 
-### 8.1 Konsep
+### 9.1 Konsep
 
 * Firewall filter Junos bersifat stateless. Inspeksi per-packet.
 * Urutan term adalah segalanya. Jika tidak ada term yang match → implicit deny.
@@ -464,9 +580,9 @@ set protocols <IGP-B> export <IGP-A-TO-B>
 | `count`, `log`, `syslog` | Audit |
 | `policer` | Rate-limit |
 
-### 8.2 Loopback Protection (RE Protection) — Template Wajib
+### 9.2 Loopback Protection (RE Protection) — Template Wajib
 
-Filter ini melindungi Routing Engine. Apply ke `lo0`. Hanya izinkan traffic yang dibutuhkan ke RE, dari source yang sah, dengan rate-limit.
+> Filter ini melindungi Routing Engine. Apply ke `lo0`. Hanya izinkan traffic yang dibutuhkan ke RE, dari source yang sah, dengan rate-limit.
 
 ```bash
 [edit firewall]
@@ -509,8 +625,9 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 > Yang di-apply adalah **nama filter**, bukan nama term. Verifikasi: `show firewall filter <FILTER>`, `show firewall counter`, `show firewall log`
 
+---
 
-## 9. MPLS Core
+## 10. MPLS Core
 
 **Syarat MPLS jalan:** IGP Full & loopback reachable → `family mpls` aktif di interface core → LDP atau RSVP aktif.
 
@@ -541,10 +658,11 @@ Verifikasi: `show mpls interface`, `show mpls lsp`, `show ldp neighbor`, `show l
 | **RSVP-TE** | Butuh TE, explicit path, bandwidth guarantee, FRR |
 | **Segment Routing** | Modern, controller-based — roadmap |
 
+---
 
-## 10. MPLS Services: L2VPN, VPLS, L3VPN
+## 11. MPLS Services: L2VPN, VPLS, L3VPN
 
-### 10.1 Matriks Pemilihan
+### 11.1 Matriks Pemilihan
 
 | Service | Layer | Topologi | Kapan Dipakai |
 | :--- | :--- | :--- | :--- |
@@ -554,7 +672,7 @@ Verifikasi: `show mpls interface`, `show mpls lsp`, `show ldp neighbor`, `show l
 
 > Jangan pakai VPLS jika hanya 2 site (pakai L2VPN). Jangan pakai L2VPN jika butuh 3+ site (pakai VPLS / EVPN).
 
-### 10.2 L2VPN (L2Circuit)
+### 11.2 L2VPN (L2Circuit)
 
 VC-ID harus identik di kedua PE. MTU & control-word harus identik di kedua PE.
 
@@ -576,7 +694,7 @@ set interfaces <CE-IF> unit <VLAN> vlan-id <VLAN-ID>
 
 Verifikasi: `show l2circuit connections` (Up), `show l2circuit connections extensive`, `ping mpls l2circuit virtual-circuit <VC-ID> neighbor <FAR-PE-LOOPBACK>`
 
-### 10.3 VPLS
+### 11.3 VPLS
 
 ```bash
 [edit routing-instances <VPLS-INSTANCE>]
@@ -599,7 +717,9 @@ set interfaces <CE-IF> encapsulation ethernet-vpls
 
 Verifikasi: `show vpls connections`, `show vpls mac-table`
 
-### 10.4 L3VPN — VRF
+> Untuk greenfield, pertimbangkan **EVPN** sebagai pengganti VPLS. EVPN lebih scalable, mendukung active-active multihoming, dan merupakan standar saat ini. VPLS dipertahankan untuk kompatibilitas legacy.
+
+### 11.4 L3VPN — VRF
 
 **Konsep:**
 
@@ -671,9 +791,281 @@ set interfaces lo0 unit 1 family inet address <SHAM-LOCAL>/32
 Verifikasi L3VPN: `show route table <VRF>.inet.0`, `show route forwarding-table vpn <VRF>`, `show bgp summary instance <VRF>`, `ping routing-instance <VRF> <DEST> source <SRC>`, `show ospf neighbor instance <VRF>`
 
 
-## 11. Template Konfigurasi + Penjelasan
+---
 
-### 11.1 Template A — Golden Baseline (System & Hardening)
+---
+
+## 12. EVPN-VXLAN & Migrasi VPLS → EVPN
+
+> **Kenapa bab ini ada:** VPLS di Bab 11 sudah benar untuk legacy, tapi untuk greenfield & roadmap Juniper, standar saat ini adalah **EVPN**. Bab ini menjelaskan kenapa EVPN lebih baik, template EVPN, dan cara migrasi tanpa downtime.
+
+### 12.1 Kenapa EVPN Menggantikan VPLS
+
+| Aspek | VPLS | EVPN |
+| :--- | :--- | :--- |
+| MAC Learning | Data-plane flooding (broadcast ke semua PE) | Control-plane via BGP (MP-BGP EVPN) |
+| Loop / Storm | 1 loop di 1 CE bisa storm ke semua site | Lebih terkontrol, DF election cegah duplikasi |
+| Multihoming | Single-active (backup standby) | Active-active (load-balancing) |
+| Scaling | Flooding membesar seiring site bertambah | Lebih scalable, MAC via BGP |
+| Layanan | L2 saja | L2 + L3 (EVPN + L3VPN terintegrasi) |
+
+**Prinsip:** Jika customer baru, pakai EVPN. Jika customer lama di VPLS, rencanakan migrasi bertahap, bukan flag-day.
+
+### 12.2 Template EVPN-VXLAN (PE)
+
+```bash
+[edit]
+# 1. BGP EVPN ke RR
+set protocols bgp group <TO-RR> family evpn signaling
+set protocols bgp group <TO-RR> neighbor <RR-LOOPBACK> description "<RR>"
+
+# 2. EVPN Instance — VLAN-aware
+set routing-instances <EVPN-INSTANCE> instance-type evpn
+set routing-instances <EVPN-INSTANCE> vlan-id <VLAN-ID>
+set routing-instances <EVPN-INSTANCE> interface <CE-IF>.0
+set routing-instances <EVPN-INSTANCE> route-distinguisher <RD>
+set routing-instances <EVPN-INSTANCE> vrf-target <RT>
+set routing-instances <EVPN-INSTANCE> protocols evpn encapsulation vxlan
+set routing-instances <EVPN-INSTANCE> protocols evpn extended-vlan-list <VLAN-ID>
+set routing-instances <EVPN-INSTANCE> protocols evpn default-gateway no-gateway-community
+
+# 3. VXLAN — VNI harus sama di semua PE untuk 1 layanan
+set interfaces <CE-IF> unit <VLAN-ID> family bridge interface-mode access
+set interfaces <CE-IF> unit <VLAN-ID> family bridge vlan-id <VLAN-ID>
+# set protocols evpn vni <VNI> — dari IPAM, unik per layanan
+
+# 4. Multihoming Active-Active (jika CE dual-homed ke 2 PE)
+set interfaces <AE-IF> esi <ESI>
+set interfaces <AE-IF> esi all-active
+set protocols evpn esi <ESI> auto-derive
+```
+
+**Penjelasan Per Blok:**
+
+| Blok | Kenapa Penting |
+| :--- | :--- |
+| `family evpn signaling` | BGP harus bawa route EVPN (Type 1-5). Tanpa ini, MAC tidak ter-advertise |
+| `route-distinguisher` + `vrf-target` | Sama seperti L3VPN: RD unik, RT menentukan import/export |
+| `encapsulation vxlan` + `VNI` | VXLAN overlay. VNI harus sama di semua PE untuk 1 layanan |
+| `ESI + all-active` | Ethernet Segment Identifier. `all-active` = CE bisa aktif ke 2 PE sekaligus, load-balancing. Tanpa ESI, multihoming jadi single-active |
+| `default-gateway` | Untuk EVPN IRB (L3 gateway). Jika hanya L2, tidak perlu IRB |
+
+**Verifikasi:** `show evpn database`, `show evpn mac-table`, `show bgp summary`, `show route table <EVPN>.evpn.0`, `ping <CE-IP>`
+
+### 12.3 Migrasi VPLS → EVPN Tanpa Downtime
+
+1. **Fase 1 — Bangun EVPN paralel.** VPLS tetap jalan, EVPN dibangun di VNI berbeda, tidak ganggu VPLS.
+2. **Fase 2 — Pilot 1 site.** Pindahkan 1 CE ke EVPN, verifikasi MAC & ping. Rollback ke VPLS jika gagal (deactivate EVPN, activate VPLS).
+3. **Fase 3 — Migrasi per site.** 1 site per maintenance window. Monitor MAC flapping & broadcast.
+4. **Fase 4 — Hapus VPLS.** Setelah semua site di EVPN & stabil 1 minggu, hapus VPLS instance.
+
+**Kesalahan umum:** VNI beda antar PE, ESI tidak sama di 2 PE untuk 1 CE dual-homed, lupa `family evpn` di BGP ke RR.
+
+---
+
+## 13. QoS / CoS — Classification, Policer, Scheduler
+
+> **Kenapa bab ini ada:** Customer enterprise selalu tanya: "Gimana VoIP tidak putus saat traffic penuh?" Jawabannya CoS. Tanpa CoS, semua traffic diperlakukan sama — VoIP kalah dengan download besar.
+
+### 13.1 Prinsip CoS Junos
+
+```
+CE → PE: Classify (DSCP / 802.1p) → Policer (rate-limit) → Queue → Scheduler (prioritas) → Rewrite (tandai lagi ke core)
+```
+
+| Konsep | Arti |
+| :--- | :--- |
+| **Classifier** | Baca DSCP / 802.1p dari packet, masukkan ke forwarding-class |
+| **Forwarding-Class** | Antrian: `voice`, `video`, `data-critical`, `best-effort` |
+| **Policer** | Rate-limit per class. Jika melebihi, drop / remark |
+| **Scheduler** | Prioritas & bandwidth per antrian. `strict-high` untuk VoIP |
+| **Rewrite** | Tulis lagi DSCP / EXP saat keluar PE ke core |
+
+### 13.2 Template CoS (PE)
+
+```bash
+[edit class-of-service]
+# 1. Forwarding Class
+set class-of-service forwarding-classes queue 0 best-effort
+set class-of-service forwarding-classes queue 1 data-critical
+set class-of-service forwarding-classes queue 2 video
+set class-of-service forwarding-classes queue 3 voice priority high
+
+# 2. Classifier — baca DSCP dari CE
+set class-of-service classifiers dscp <CLASSIFIER> forwarding-class voice loss-priority low code-points ef
+set class-of-service classifiers dscp <CLASSIFIER> forwarding-class video loss-priority low code-points af41
+set class-of-service classifiers dscp <CLASSIFIER> forwarding-class data-critical loss-priority low code-points af31
+set class-of-service classifiers dscp <CLASSIFIER> forwarding-class best-effort loss-priority high code-points 000000
+
+# 3. Policer — batasi per class (contoh: voice max 10M)
+set firewall policer <VOICE-POLICER> if-exceeding bandwidth-limit 10m
+set firewall policer <VOICE-POLICER> if-exceeding burst-size-limit 1m
+set firewall policer <VOICE-POLICER> then discard
+
+# 4. Scheduler — prioritas & bandwidth
+set class-of-service schedulers <VOICE-SCHED> transmit-rate percent 20
+set class-of-service schedulers <VOICE-SCHED> priority strict-high
+set class-of-service schedulers <DATA-SCHED> transmit-rate percent 50
+set class-of-service schedulers <DATA-SCHED> priority low
+set class-of-service schedulers <BE-SCHED> transmit-rate percent 30
+set class-of-service schedulers <BE-SCHED> priority low
+
+# 5. Scheduler Map + Apply ke interface
+set class-of-service scheduler-maps <MAP> forwarding-class voice scheduler <VOICE-SCHED>
+set class-of-service scheduler-maps <MAP> forwarding-class data-critical scheduler <DATA-SCHED>
+set class-of-service scheduler-maps <MAP> forwarding-class best-effort scheduler <BE-SCHED>
+set class-of-service interfaces <CE-IF> unit 0 scheduler-map <MAP>
+set class-of-service interfaces <CE-IF> unit 0 classifiers dscp <CLASSIFIER>
+
+# 6. Rewrite — tandai lagi ke core (MPLS EXP)
+set class-of-service rewrite-rules exp <REWRITE> forwarding-class voice loss-priority low code-point 5
+set class-of-service rewrite-rules exp <REWRITE> forwarding-class best-effort loss-priority high code-point 0
+set class-of-service interfaces <CORE-IF> unit 0 rewrite-rules exp <REWRITE>
+```
+
+**Penjelasan Per Blok:**
+
+| Blok | Kenapa Penting |
+| :--- | :--- |
+| `forwarding-classes` | Antrian. `voice` harus `priority high` + `queue 3` (paling prioritas) |
+| `classifiers dscp` | Baca DSCP dari CE. Jika CE tidak marking, PE harus classify dari IP / port |
+| `policer` | Cegah 1 class monopoli bandwidth. Voice dibatasi agar tidak ganggu data, data dibatasi agar tidak ganggu voice |
+| `scheduler` | `strict-high` untuk voice = voice selalu didahulukan. Tanpa ini, voice antre sama dengan download |
+| `rewrite-rules exp` | MPLS EXP harus konsisten di core agar P router juga prioritaskan voice. Tanpa rewrite, P router tidak tahu mana voice |
+
+**Verifikasi:** `show class-of-service interface <IF>`, `show class-of-service queue`, `show firewall policer`, `ping` + `show interfaces queue` saat load test
+**Kesalahan umum:** Classifier tidak match dengan marking CE, scheduler tidak di-apply ke interface, rewrite tidak konsisten di semua PE.
+
+---
+
+## 14. High Availability & Convergence
+
+> **Kenapa bab ini ada:** Design review principal selalu tanya: "Kalau 1 P down, berapa detik traffic pindah? Kalau RE restart, BGP down atau tidak?" Bab ini menjawab dengan angka & mekanisme.
+
+### 14.1 Mekanisme HA Junos
+
+| Mekanisme | Fungsi | Kapan Dipakai |
+| :--- | :--- | :--- |
+| **Graceful Restart (GR)** | RE restart, PFE tetap forwarding dengan FIB lama, BGP/IGP tidak flap | Single RE, maintenance RE |
+| **GRES** | Backup RE takeover tanpa restart PFE, tapi control-plane restart | Dual RE, failover RE |
+| **NSR** | Backup RE sudah sync state, failover tanpa flap BGP/IGP sama sekali | Dual RE, SLA ketat (99.999%) |
+| **NSB** | NSR untuk bridging / L2 | Dual RE + VPLS / EVPN |
+| **BFD** | Deteksi failure sub-detik | Semua link core |
+| **FRR (Fast Reroute)** | Backup path MPLS siap, switchover <50ms | RSVP-TE, SLA ketat |
+
+**Trade-off:**
+
+| Pilihan | Kelebihan | Kekurangan |
+| :--- | :--- | :--- |
+| GR saja | Sederhana, tanpa dual RE | BGP flap sesaat, tapi PFE tetap forwarding |
+| GRES + NSR | Zero flap, zero loss | Butuh dual RE, config lebih kompleks, resource lebih besar |
+| BFD + FRR | Convergence <1 detik | Butuh tuning, jika BFD terlalu agresif bisa false-positive flap |
+
+### 14.2 Template HA
+
+```bash
+[edit]
+# Graceful Restart — IGP + BGP
+set routing-options graceful-restart
+set protocols ospf graceful-restart
+set protocols isis graceful-restart
+set protocols bgp graceful-restart
+
+# BFD — deteksi failure sub-detik
+set protocols ospf area <AREA> interface <IF>.0 bfd-liveness-detection minimum-interval <MS>
+set protocols ospf area <AREA> interface <IF>.0 bfd-liveness-detection multiplier <N>
+
+# GRES + NSR — Dual RE only
+# set chassis redundancy graceful-switchover
+# set system commit synchronize
+# set routing-options nonstop-routing
+
+# FRR — RSVP-TE only
+# set protocols rsvp interface <IF>.0 link-protection
+# set protocols mpls label-switched-path <LSP> link-protection
+```
+
+**Penjelasan:** `graceful-restart` di routing-options + per-protocol harus konsisten. `GRES` butuh `graceful-switchover` di chassis. `NSR` butuh `nonstop-routing` + `commit synchronize`. Tanpa `commit synchronize`, backup RE tidak sync config.
+
+**Verifikasi:** `show system switchover`, `show graceful-restart`, `show bfd session`, `show rsvp session`, `show mpls lsp`
+**Test Failover (Wajib Berkala):** `request chassis routing-engine master switch` (dual RE) → verifikasi BGP tetap Established, ping tidak loss >1 detik. `deactivate` 1 link core → verifikasi traffic pindah <1 detik.
+
+---
+
+## 15. Security Expert: RPKI, RTBH, BGP Flowspec
+
+> **Kenapa bab ini ada:** `PROTECT-RE` di Bab 9 melindungi RE, tapi tidak melindungi dari BGP hijack, DDoS besar, atau route leak. Bab ini adalah defense in depth untuk ISP / enterprise.
+
+### 15.1 Tiga Lapisan Keamanan BGP
+
+| Lapisan | Fungsi | Contoh |
+| :--- | :--- | :--- |
+| **RPKI** | Validasi asal prefix. Cegah BGP hijack (attacker klaim prefix orang lain) | ROA: `<PREFIX>` hanya boleh di-originate AS 65000 |
+| **RTBH** | Buang traffic serangan ke blackhole (Null route) via BGP community | Serangan DDoS ke 1 IP → advertise /32 dengan community blackhole → upstream buang |
+| **BGP Flowspec** | Filter DDoS di edge via BGP (5-tuple: src, dst, port, protocol) | Blokir UDP port 53 dari botnet ke 1 destination, tanpa blokir semua UDP |
+
+### 15.2 Template RPKI + RTBH + Flowspec (Konsep)
+
+```bash
+# --- RPKI ---
+[edit routing-options]
+set routing-options validation group <RPKI-GROUP> session <RPKI-SERVER> local-address <LOOPBACK-IP>
+set routing-options validation group <RPKI-GROUP> session <RPKI-SERVER> port <RPKI-PORT>
+set routing-options validation group <RPKI-GROUP> session <RPKI-SERVER> refresh-time <SEC>
+
+[edit policy-options]
+set policy-options policy-statement <RPKI-POLICY> term VALID from validation-database valid
+set policy-options policy-statement <RPKI-POLICY> term VALID then accept
+set policy-options policy-statement <RPKI-POLICY> term INVALID from validation-database invalid
+set policy-options policy-statement <RPKI-POLICY> term INVALID then reject
+set policy-options policy-statement <RPKI-POLICY> term UNKNOWN from validation-database unknown
+set policy-options policy-statement <RPKI-POLICY> term UNKNOWN then accept
+# Apply: set protocols bgp group <EBGP> import <RPKI-POLICY>
+
+# --- RTBH ---
+[edit routing-options]
+set routing-options static route <BLACKHOLE-IP>/32 discard
+set routing-options static route <BLACKHOLE-IP>/32 community <BLACKHOLE-COMMUNITY>
+# Saat serangan: advertise <VICTIM-IP>/32 dengan community blackhole ke upstream
+# Upstream akan buang traffic ke <VICTIM-IP> — victim down, tapi core selamat
+
+# --- BGP Flowspec ---
+[edit]
+set protocols bgp group <FLOWSPEC> family inet flow
+set protocols bgp group <FLOWSPEC> neighbor <FLOWSPEC-SERVER> description "Flowspec Controller"
+# Contoh rule (dari controller): blokir UDP src <BOTNET> dst <VICTIM> port 53
+# set firewall family inet filter <FLOWSPEC-FILTER> term <RULE> from destination-address <VICTIM>/32
+# set firewall family inet filter <FLOWSPEC-FILTER> term <RULE> from protocol udp
+# set firewall family inet filter <FLOWSPEC-FILTER> term <RULE> from destination-port 53
+# set firewall family inet filter <FLOWSPEC-FILTER> term <RULE> then discard
+```
+
+**Penjelasan:**
+
+| Blok | Kenapa Penting |
+| :--- | :--- |
+| `RPKI validation` | Tanpa RPKI, attacker bisa hijack prefix & arahkan traffic ke server jahat. RPKI adalah standar IETF untuk BGP security |
+| `ROA valid / invalid / unknown` | `valid` = ROA cocok, `invalid` = ROA tidak cocok (hijack), `unknown` = belum ada ROA. Policy: `invalid` → reject, `valid`/`unknown` → accept |
+| `RTBH` | Saat DDoS besar, lebih baik korban 1 IP daripada core down. RTBH adalah circuit breaker |
+| `Flowspec` | Filter granular di edge, tanpa harus login ke semua router. Controller kirim Flowspec via BGP, semua PE apply otomatis |
+
+**Verifikasi:** `show validation database`, `show validation session`, `show route <PREFIX> detail` (lihat validation-state), `show firewall filter <FLOWSPEC-FILTER>`
+**Kesalahan umum:** RPKI `invalid` di-accept (hijack lolos), RTBH tidak diuji, Flowspec terlalu broad (blokir traffic sah).
+
+
+---
+
+---
+
+## Bagian III — Implementasi & Validasi
+
+## 16. Template Konfigurasi + Penjelasan
+
+> **Bab ini adalah kumpulan template siap pakai.** Setiap template terdiri dari: Tujuan → Kapan Dipakai → Template (`set` format) → Penjelasan Per Blok → Verifikasi → Kesalahan Umum.
+> **Semua nilai adalah placeholder.** Isi dari IPAM / vault sebelum load. Jangan load template mentah ke produksi.
+> **Cara pakai:** Copy template → ganti semua `<...>` → `show | compare` → `commit check` → `commit confirmed`.
+
+### 16.1 Template A — Golden Baseline (System & Hardening)
 
 **Tujuan:** Baseline awal untuk setiap device baru. Tanpa baseline ini, device tidak boleh masuk produksi.
 **Kapan dipakai:** PE, P, RR, CE, switch — semua device.
@@ -729,8 +1121,9 @@ set system services netconf ssh
 **Verifikasi:** `show system uptime`, `show ntp associations`, `show system login`, `show configuration system | display set`
 **Kesalahan umum:** Pakai password plaintext di Git, lupa `source-address` NTP, enable Telnet/FTP.
 
+---
 
-### 11.2 Template B — Interface + LACP
+### 16.2 Template B — Interface + LACP
 
 **Tujuan:** Interface core & agregasi yang konsisten MTU, description, dan LACP.
 **Kapan dipakai:** Link core PE-P, P-P, RR-P, dan link agregasi ke switch / CE.
@@ -782,8 +1175,9 @@ set interfaces <MEMBER-2> gigether-options 802.3ad <AE-IF>
 **Verifikasi:** `show interfaces terse`, `show lacp interfaces <AE-IF>`, `show interfaces <CORE-IF> extensive`
 **Kesalahan umum:** MTU di member beda dengan `aeX`, LACP `passive/passive`, VLAN di member bukan di `aeX`.
 
+---
 
-### 11.3 Template C — OSPF + BFD
+### 16.3 Template C — OSPF + BFD
 
 **Tujuan:** IGP untuk enterprise / core yang butuh konvergensi cepat dan aman.
 **Kapan dipakai:** Core OSPF Area 0, atau PE-CE OSPF.
@@ -820,8 +1214,9 @@ set protocols ospf area <AREA-0> interface <CORE-IF>.0 bfd-liveness-detection fu
 **Verifikasi:** `show ospf neighbor` (Full), `show ospf interface`, `show bfd session`, `show route protocol ospf`
 **Kesalahan umum:** Hello/dead & auth beda antar neighbor, MTU beda, lupa `passive` di lo0, `metric` dikira MTU.
 
+---
 
-### 11.4 Template D — IS-IS
+### 16.4 Template D — IS-IS
 
 **Tujuan:** IGP untuk core besar / ISP yang butuh scaling & roadmap SR-MPLS.
 **Kapan dipakai:** Core ISP, atau migrasi dari OSPF ke IS-IS.
@@ -860,8 +1255,9 @@ set protocols isis level 2 wide-metrics-only
 **Verifikasi:** `show isis adjacency` (Up), `show isis interface`, `show isis database detail`, `show route protocol isis`
 **Kesalahan umum:** Lupa `family iso`, NET salah format, `wide-metrics-only` tidak di-set, MTU beda.
 
+---
 
-### 11.5 Template E — BGP Route Reflector (RR + PE Client)
+### 16.5 Template E — BGP Route Reflector (RR + PE Client)
 
 **Tujuan:** Skala BGP iBGP tanpa full-mesh. PE hanya peering ke RR.
 **Kapan dipakai:** Core dengan >3 PE, atau layanan L3VPN yang butuh VPNv4.
@@ -913,8 +1309,9 @@ set protocols bgp group <TO-RR> neighbor <RR-LOOPBACK-2> description "<RR-2>"
 **Verifikasi:** `show bgp summary` (Established ke 2 RR), `show bgp group <GROUP>`, `show route advertising-protocol bgp <PE>`, `show route receive-protocol bgp <PE>`
 **Kesalahan umum:** Cluster-ID sama antar RR, key beda, hanya 1 RR, lupa `family inet-vpn`.
 
+---
 
-### 11.6 Template F — MPLS + LDP
+### 16.6 Template F — MPLS + LDP
 
 **Tujuan:** Fondasi untuk L2VPN / VPLS / L3VPN. Distribusi label otomatis.
 **Kapan dipakai:** Semua router core (P, PE, RR).
@@ -952,8 +1349,9 @@ set protocols lldp management-address <LOOPBACK-IP>
 **Verifikasi:** `show mpls interface`, `show mpls lsp`, `show ldp neighbor`, `show ldp session`, `show route forwarding-table family mpls`, `show lldp neighbors`
 **Kesalahan umum:** IGP belum Full tapi LDP dipaksa, lupa `family mpls` di interface, MTU tidak cukup untuk label overhead.
 
+---
 
-### 11.7 Template G — L3VPN VRF + PE-CE BGP (AS-Override)
+### 16.7 Template G — L3VPN VRF + PE-CE BGP (AS-Override)
 
 **Tujuan:** Isolasi routing antar customer. Customer bisa pakai IP yang sama tanpa konflik.
 **Kapan dipakai:** Layanan L3VPN enterprise, atau customer dengan overlapping IP.
@@ -1008,7 +1406,9 @@ set routing-instances <VRF> protocols bgp group <TO-CE> neighbor <CE-IP> export 
 **Verifikasi:** `show route table <VRF>.inet.0`, `show bgp summary instance <VRF>`, `ping routing-instance <VRF> <DEST> source <SRC>`
 **Kesalahan umum:** RD sama untuk 2 customer, RT salah, lupa `vrf-table-label`, `as-override` tidak di-set padahal CE AS sama.
 
-### 11.8 Template H — L2VPN (L2Circuit)
+---
+
+### 16.8 Template H — L2VPN (L2Circuit)
 
 **Tujuan:** Hubungkan 2 site seolah 1 kabel (Point-to-Point L2).
 **Kapan dipakai:** Branch ↔ HQ 1 VLAN, atau 2 site yang butuh L2 murni.
@@ -1042,7 +1442,9 @@ set interfaces <CE-IF> unit <VLAN> vlan-id <VLAN-ID>
 **Verifikasi:** `show l2circuit connections` (Up), `show l2circuit connections extensive`, `ping mpls l2circuit virtual-circuit <VC-ID> neighbor <FAR-PE>`
 **Kesalahan umum:** VC-ID beda, VLAN beda, MTU beda, control-word beda — 4 penyebab Down paling sering.
 
-### 11.9 Template I — VPLS
+---
+
+### 16.9 Template I — VPLS
 
 **Tujuan:** Banyak site seolah 1 switch (Multipoint L2).
 **Kapan dipakai:** 3+ site retail / branch dalam 1 broadcast domain.
@@ -1079,8 +1481,9 @@ set interfaces <CE-IF> encapsulation ethernet-vpls
 **Verifikasi:** `show vpls connections` (Up), `show vpls mac-table` (MAC belajar)
 **Kesalahan umum:** VPLS-ID beda, lupa `ethernet-vpls`, tidak ada storm-control / MAC limit.
 
+---
 
-### 11.10 Template J — Firewall Filter & RE Protection
+### 16.10 Template J — Firewall Filter & RE Protection
 
 **Tujuan:** Lindungi Routing Engine dari traffic yang tidak perlu & serangan.
 **Kapan dipakai:** Wajib di semua device produksi. Apply ke `lo0`.
@@ -1136,9 +1539,25 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 **Verifikasi:** `show firewall filter <FILTER>`, `show firewall counter`, `show firewall log`
 **Kesalahan umum:** Lupa `source-address`, lupa `policer`, apply nama term bukan nama filter, lupa izinkan IGP/BGP sehingga IGP Down sendiri.
 
-## 12. Lab Topology — Abstract
+---
 
-### 12.1 Prinsip Desain Lab
+### 16.11 Cara Pakai Template
+
+1. **Copy template** → ganti semua `<...>` dari IPAM / vault.
+2. **Jangan copy-paste 10 template sekaligus.** Load per template, verifikasi per template.
+3. **`show | compare`** sebelum setiap `commit`.
+4. **`commit confirmed 5`** untuk perubahan remote.
+5. **Verifikasi** sesuai kolom Verifikasi di tiap template.
+6. **Simpan** config yang sudah terverifikasi sebagai Golden Config di repo.
+
+---
+
+## 17. Lab Topology — Abstract
+
+> **Tujuan bab ini:** Menunjukkan struktur lab, bukan mempublish addressing produksi.
+> **Alamat di bawah ini adalah placeholder / blok contoh.** Alokasi aktual dari IPAM internal. Jangan copy-paste ke produksi tanpa IPAM.
+
+### 17.1 Prinsip Desain Lab
 
 | Prinsip | Penjelasan |
 | :--- | :--- |
@@ -1147,7 +1566,7 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 | Satu AS, satu IGP | Satu AS, OSPF Area 0 atau IS-IS L2 di core |
 | Deterministic | Semua subnet bisa ditebak dari IPAM, tidak ada IP acak |
 
-### 12.2 Node Inventory — Struktur (Bukan Nilai Produksi)
+### 17.2 Node Inventory — Struktur (Bukan Nilai Produksi)
 
 | Role | Jumlah | Fungsi | Catatan |
 | :--- | :--- | :--- | :--- |
@@ -1160,7 +1579,7 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 **Resource Lab (per VM):** 2 vCPU, 4 GB RAM, 3-6 vNIC. Platform: EVE-NG / PNETLab / GNS3 / VMware.
 
-### 12.3 Addressing Plan — Blok (Isi dari IPAM)
+### 17.3 Addressing Plan — Blok (Isi dari IPAM)
 
 | Blok | Penggunaan | Contoh Format |
 | :--- | :--- | :--- |
@@ -1178,10 +1597,56 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 | VPLS-ID | Harus identik di semua PE dalam 1 VPLS |
 | Sham-Link | Endpoint `lo0.1` di VRF, cost di-tune lebih murah dari backdoor jika MPLS adalah primary |
 
+### 17.4 Urutan Lab — Wajib Berurutan
 
-## 13. Config Library — Index
+| Lab | Judul | Success Criteria |
+| :--- | :--- | :--- |
+| LAB 01 | Golden Baseline & Hardening | SSH OK, NTP sync |
+| LAB 02 | Interface & LACP | LACP Collecting + Distributing |
+| LAB 03 | OSPF + BFD | OSPF Full semua link |
+| LAB 04 | IS-IS (Alternatif) | IS-IS adjacency Up |
+| LAB 05 | MPLS + LDP + LLDP | LDP Operational |
+| LAB 06 | BGP Route Reflector | BGP Established ke 2 RR |
+| LAB 07 | Policy & Redistribution | Route sesuai filter |
+| LAB 08 | Firewall Filter | Prefix tidak sah ditolak |
+| LAB 09 | L2VPN | L2Circuit Up, CE-CE ping |
+| LAB 10 | VPLS | VPLS Up, MAC belajar, CE-CE ping |
+| LAB 11 | L3VPN Basic | VRF route ada, CE-CE ping |
+| LAB 12 | L3VPN AS-Override | Tanpa as-override: ditolak (AS-loop). Dengan: Established |
+| LAB 13 | L3VPN Sham-Link | OSPF neighbor via sham-link Full |
+| LAB 14 | Failure & Failover | Matikan 1 P → traffic via P lain |
+| LAB 15 | Backup / Rollback | Rollback berhasil ke baseline |
 
-### 13.1 Prinsip Per Role
+**Urutan wajib:** LAB 01 → 03 → 05 → 06 → 09/10/11. Jangan lompat ke L2VPN/L3VPN sebelum IGP + LDP + BGP Established.
+
+---
+
+## 18. Config Library — Index
+
+> **File `.conf` adalah template.** Isi semua `<PLACEHOLDER>` dari IPAM / vault sebelum load. Jangan load template mentah ke produksi.
+
+### 18.1 Inventaris File
+
+| # | File | Role | Isi Utama |
+| :--- | :--- | :--- | :--- |
+| 1 | `Junos-PE-Golden-Config.conf` | PE Golden | Baseline PE: PROTECT-RE, SNMPv3, OSPF+BFD, BGP TO-RR, MPLS+LDP, VRF template |
+| 2 | `Junos-PE-Golden-Config-SET.txt` | PE Golden (SET) | Versi `set` dari file #1, untuk paste via terminal |
+| 3 | `Junos-P-01-Golden-Config.conf` | P Core | Core P, OSPF+BFD, MPLS+LDP+RSVP, Tanpa VRF, Tanpa BGP VPN |
+| 4 | `Junos-P-02-Golden-Config.conf` | P Core | Mirror P-01 |
+| 5 | `Junos-RR-01-Golden-Config.conf` | RR Primary | Cluster unik, BGP RR-CLIENTS → PE, RR-TO-RR → RR-02 |
+| 6 | `Junos-RR-02-Golden-Config.conf` | RR Backup | Cluster unik, mirror RR-01 |
+| 7 | `Junos-CE-A1-Config.conf` | CE L3VPN | PE-CE BGP, LAN di CE |
+| 8 | `Junos-CE-A2-Config.conf` | CE L3VPN | PE-CE BGP, AS sama untuk test AS-Override |
+| 9 | `Junos-CE-B1-Config.conf` | CE L2VPN | VLAN, L2 murni, Tanpa BGP/OSPF ke PE |
+| 10 | `Junos-CE-B2-Config.conf` | CE L2VPN | VLAN, mirror CE-B1 |
+| 11 | `Junos-CE-C1-Config.conf` | CE VPLS | VPLS, L2 multipoint |
+| 12 | `Junos-CE-C2-Config.conf` | CE VPLS | VPLS |
+| 13 | `Junos-CE-C3-Config.conf` | CE VPLS | VPLS |
+| 14 | `Junos-Lab-Topology-IP-Plan.md` / `.pdf` | Dokumen Lab | IP Plan — **Internal Only, bukan untuk README public** |
+| 15 | `Junos-OS-Professional-Guide.md` / `.pdf` | Guide ID | Guide lengkap Bahasa Indonesia — **Internal** |
+| 16 | `Junos-OS-Professional-Guide-EN.md` / `.pdf` | Guide EN | Guide English — **Customer-ready, tanpa nilai produksi** |
+
+### 18.2 Prinsip Per Role
 
 **PE — Golden Config:** Setiap PE baru. Ganti `<HOSTNAME>`, `<LOOPBACK-IP>`, `<AS>`, `<MGMT-IP>`, `<NTP>`, `<SYSLOG>`, `<RR>`, semua kredensial dari vault.
 
@@ -1195,7 +1660,7 @@ set interfaces lo0 unit 0 family inet filter input <PROTECT-RE-FILTER>
 
 **CE — VPLS:** 1 switch virtual. Semua CE dalam 1 subnet yang sama. Broadcast ARP menyebar ke semua site.
 
-### 13.2 Cara Load
+### 18.3 Cara Load
 
 ```bash
 # Device baru — RECOMMENDED
@@ -1223,11 +1688,153 @@ show route table <VRF>.inet.0
 ping routing-instance <VRF> <DEST> source <SRC>
 ```
 
-## 14. Studi Kasus Expert — Pola Desain
+**Checkpoint:** Setelah LAB 06 sukses (BGP Established), snapshot semua VM.
+
+---
+
+---
+
+## Bagian IV — Operasi & Troubleshooting
+
+## 19. Operasi & Change Management
+
+### 19.1 Backup & Restore
+
+```bash
+# Backup lokal
+root# save /var/tmp/<HOSTNAME>-<DATE>.conf
+
+# Backup remote (dari Operational Mode)
+root> file copy /config/juniper.conf.gz scp://<BACKUP-USER>@<BACKUP-SERVER>:/backup/<HOSTNAME>/
+
+# Restore — HATI-HATI: override = ganti seluruh config
+root# load override /var/tmp/<BACKUP>.conf
+root# show | compare
+root# commit confirmed 5
+
+# Load Merge — merge, tidak delete existing
+root# load merge /var/tmp/<PARTIAL>.conf
+root# show | compare
+root# commit confirmed 5
+```
+
+**Automated Backup:** Pakai `system archival configuration transfer-on-commit` + `archive-sites` dari vault. Jangan hardcode kredensial di README.
+
+### 19.2 Troubleshooting Framework
+
+1. **Apa yang berubah?** — `show system commit`, `show | compare`
+2. **Layer 1/2** — `show interfaces terse`, `show lacp`
+3. **Layer 3 / IGP** — `show ospf neighbor`, `show isis adjacency`, `show route`
+4. **MPLS / BGP** — `show mpls lsp`, `show ldp neighbor`, `show bgp summary`
+5. **Service** — `show l2circuit`, `show vpls`, `show route table <VRF>`
+6. **Log** — `show log messages | last 50`, `show log chassisd`
+
+| Gejala | Penyebab Paling Sering | Fix |
+| :--- | :--- | :--- |
+| OSPF `Init` | One-way Hello, auth mismatch, MTU mismatch | Cek hello/dead, auth, MTU, firewall multicast |
+| OSPF `ExStart` | MTU mismatch, DBD problem | Samakan MTU di core |
+| LDP `Non-Existent` | IGP belum Full, loopback tidak ter-reach | Cek `show route <LOOPBACK>` |
+| BGP `Active` | TCP 179 diblokir, `local-address` salah, AS salah | Cek PROTECT-RE izinkan 179 |
+| BGP `Idle` | `peer-as` salah, `authentication-key` mismatch | Cek peer-as, key dari vault |
+| L2VPN `Down` | VC-ID beda, VLAN mismatch, MTU mismatch, control-word beda | Samakan VC-ID, VLAN, MTU |
+| VPLS `Down` | VPLS-ID beda, encapsulation salah | Samakan VPLS-ID |
+| L3VPN ping gagal | RD/RT mismatch, MP-BGP tidak Established | Cek BGP, VRF, RT |
+| AS-Override tidak jalan | CE AS beda, `as-override` tidak di PE | Pastikan CE AS sama untuk test |
+| Sham-Link tidak Full | `lo0.1` tidak di VRF, `sham-link-remote` salah | Cek `lo0.1` di VRF |
+
+### 19.3 Prosedur Change Management
+
+**Pre-Change:** Pastikan tiket / CR approved dan maintenance window jelas, config backup terbaru tersimpan, `show system commit` tidak menunjukkan commit yang tidak dijelaskan, rollback plan sudah ditulis (rollback ke commit mana), `commit check` lolos, dan peer / NOC sudah diberitahu.
+
+**During Change:** Gunakan `commit confirmed <5-10>` untuk perubahan remote, lakukan `show | compare` sebelum setiap commit, uji dengan `ping`, `show ospf neighbor`, `show bgp summary`, `show mpls lsp`, `show route table <VRF>`, dan catat waktu serta output verifikasi di tiket.
+
+**Post-Change:** Lakukan `commit` final sebagai konfirmasi `commit confirmed`, verifikasi selama 15 menit untuk memastikan tidak ada flap, alarm, atau error log, pastikan `show system commit` menunjukkan commit comment yang benar, update dokumentasi / diagram jika topologi berubah, dan tutup tiket dengan bukti (before/after).
+
+---
+
+
+---
+
+## 20. Troubleshooting Expert: Packet Walk + Traceoptions
+
+> **Kenapa bab ini ada:** Troubleshooting junior: cek `show ospf neighbor`, jika Down, restart. Troubleshooting expert: ikuti packet dari CE ke CE, di hop mana hilang, kenapa hilang. Bab ini adalah framework expert.
+
+### 20.1 Packet Walk — L3VPN
+
+```
+CE-A1 (10.10.1.10) → PE-01 (VRF) → P-01 (MPLS label) → P-02 → PE-02 (VRF) → CE-A2 (10.10.2.10)
+
+Langkah 1: Di CE-A1, ping & traceroute — apakah sampai PE-01?
+Langkah 2: Di PE-01, show route table VRF — apakah route ke 10.10.2.0/24 ada? Via BGP? Via MP-BGP?
+Langkah 3: Di PE-01, show route forwarding-table vpn VRF — apakah label ada?
+Langkah 4: Di P-01, show route forwarding-table family mpls — apakah label swap benar?
+Langkah 5: Di PE-02, show route table VRF — apakah route ter-import? RT benar?
+Langkah 6: Di CE-A2, show route — apakah route sampai CE?
+```
+
+**Prinsip:** Jangan lompat ke Langkah 6 jika Langkah 2 belum dicek. 80% waktu troubleshooting terbuang karena lompat langkah.
+
+### 20.2 Traceoptions — Debug Protokol
+
+```bash
+# OSPF Traceoptions (contoh, jangan enable di produksi tanpa filter)
+[edit protocols ospf]
+set protocols ospf traceoptions file ospf.log size 10m files 5
+set protocols ospf traceoptions flag hello detail
+set protocols ospf traceoptions flag error detail
+set protocols ospf traceoptions flag lsa-update detail
+
+# BGP Traceoptions
+[edit protocols bgp]
+set protocols bgp traceoptions file bgp.log size 10m files 5
+set protocols bgp traceoptions flag state detail
+set protocols bgp traceoptions flag update detail
+
+# LDP Traceoptions
+[edit protocols ldp]
+set protocols ldp traceoptions file ldp.log size 10m files 5
+set protocols ldp traceoptions flag state detail
+
+# Verifikasi & Matikan Setelah Debug
+run show log ospf.log | last 50
+run show log bgp.log | last 50
+# Setelah selesai, deactivate traceoptions — jangan biarkan jalan terus, bisa penuhi disk & CPU
+# deactivate protocols ospf traceoptions
+# deactivate protocols bgp traceoptions
+```
+
+**Penjelasan:**
+
+| Alat | Kapan Dipakai |
+| :--- | :--- |
+| `show route` + `show route forwarding-table` | Cek control-plane vs data-plane. Route ada di control-plane tapi tidak di forwarding = PFE problem |
+| `traceoptions` | Cek Hello, LSA, BGP Update. Untuk adjacency flap yang tidak jelas penyebabnya |
+| `monitor traffic interface <IF>` | Capture packet di interface. Untuk MTU, auth, Hello mismatch |
+| `show pfe` / `show system resource-monitor` | Cek PFE CPU, RE CPU. Untuk serangan / loop |
+| `ping mpls l2circuit` / `ping routing-instance` | Cek MPLS / VRF path. Untuk L2VPN / L3VPN down |
+
+### 20.3 Urutan Troubleshooting 15 Menit
+
+| Menit | Langkah |
+| :--- | :--- |
+| 0-2 | Apa yang berubah? `show system commit`, `show | compare`, tiket terakhir |
+| 2-5 | Layer 1/2: `show interfaces terse`, `show lacp`, `show chassis alarms` |
+| 5-8 | IGP: `show ospf neighbor`, `show isis adjacency`, `show route` |
+| 8-11 | MPLS/BGP: `show mpls lsp`, `show ldp neighbor`, `show bgp summary` |
+| 11-14 | Service: `show l2circuit`, `show vpls`, `show route table <VRF>` |
+| 14-15 | Log: `show log messages | last 50`, `show firewall log` |
+
+**Kesalahan umum:** Langsung restart device, langsung `clear` tanpa baca log, langsung ubah config tanpa `show | compare`. Restart menyembunyikan RCA, bukan memperbaiki.
+
+---
+
+## 21. Studi Kasus Expert — Pola Desain
 
 > Bab ini berisi **pola desain & pola failure**, bukan post-mortem internal. Nama customer, skala, angka kerugian, dan detail kerentanan tidak dipublikasikan. Setiap kasus: `Konteks → Pola Failure → RCA (generik) → Desain Solusi → Verifikasi → Lesson`.
 
-### 14.1 Migrasi IGP Core Tanpa Downtime
+---
+
+### 21.1 Migrasi IGP Core Tanpa Downtime
 
 **Konteks:** IGP lama mulai tidak stabil saat skala bertambah. IGP baru dipilih karena scaling & roadmap yang lebih cocok. Constraint: downtime tidak diperbolehkan untuk layanan enterprise.
 
@@ -1247,8 +1854,9 @@ ping routing-instance <VRF> <DEST> source <SRC>
 * Ships-in-the-night lebih kompleks di config, tapi jauh lebih aman daripada flag-day.
 * Pilot subset wajib. Rollback plan harus per-router, bukan per-domain.
 
+---
 
-### 14.2 L3VPN Overlapping IP Antar Customer
+### 21.2 L3VPN Overlapping IP Antar Customer
 
 **Konteks:** Dua customer memakai prefix yang sama di LAN mereka. Tanpa isolasi, route tercampur — pelanggaran isolasi & audit.
 
@@ -1271,8 +1879,9 @@ show route protocol bgp table inet.6  # RD unik terlihat di VPNv4
 
 **Lesson:** RD = unik. RT = kebijakan. Test isolasi adalah bagian dari change, bukan opsional.
 
+---
 
-### 14.3 L2VPN Down Setelah Change MTU
+### 21.3 L2VPN Down Setelah Change MTU
 
 **Konteks:** Change MTU di 1 PE untuk persiapan jumbo frame, tapi PE far-end belum diubah.
 
@@ -1294,8 +1903,9 @@ show log messages | match l2circuit
 
 **Lesson:** MTU adalah silent killer L2VPN/VPLS. Cek kedua PE, bukan hanya 1 PE.
 
+---
 
-### 14.4 Route Reflector Redundancy
+### 21.4 Route Reflector Redundancy
 
 **Konteks:** PE hanya belajar route dari RR. Jika RR primary down dan RR backup tidak sehat, PE kehilangan semua route VPNv4 — VRF kosong walau IGP & LDP masih Up.
 
@@ -1317,8 +1927,9 @@ show route table <VRF>.inet.0 | count
 
 **Lesson:** Redundancy yang tidak pernah diuji = bukan redundancy. Test failover adalah bagian dari operasi rutin.
 
+---
 
-### 14.5 VPLS Broadcast Storm Karena Loop di CE
+### 21.5 VPLS Broadcast Storm Karena Loop di CE
 
 **Konteks:** VPLS meniru 1 switch virtual. Loop di 1 CE (kabel patch, STP disabled) menyebar sebagai broadcast ke seluruh VPLS domain.
 
@@ -1338,8 +1949,9 @@ show firewall counter
 
 **Lesson:** VPLS = 1 broadcast domain = 1 failure domain. Storm-control & MAC limit harus di-set dari awal, bukan saat storm. Untuk customer besar, pertimbangkan EVPN atau L3VPN.
 
+---
 
-### 14.6 Sham-Link vs Backdoor Link
+### 21.6 Sham-Link vs Backdoor Link
 
 **Konteks:** Customer punya backdoor link antar site + MPLS L3VPN. OSPF memilih backdoor (intra-area) padahal MPLS adalah jalur utama (lebih besar, latency lebih rendah), karena OSPF hierarki: Intra-area lebih preferred dari External.
 
@@ -1366,7 +1978,9 @@ show route table <VRF>.inet.0        # Route via sham-link, bukan External
 
 **Lesson:** Sham-link bukan magic — ini cost engineering. Test failover sham-link wajib.
 
-### 14.7 RE Protection di Bawah Serangan Attacker
+---
+
+### 21.7 RE Protection di Bawah Serangan
 
 **Konteks:** Serangan ke loopback (RE) bisa membanjiri control plane dan membuat IGP/BGP flap, walau forwarding (PFE) masih jalan.
 
@@ -1392,50 +2006,7 @@ show route <LOOPBACK>          # Apakah loopback bocor ke eBGP?
 * Monitoring counter DENY adalah early warning.
 * Loopback adalah identitas internal — jangan expose ke internet.
 
-## 15. Operasi & Change Management
-
-### 15.1 Backup & Restore
-
-```bash
-# Backup lokal
-root# save /var/tmp/<HOSTNAME>-<DATE>.conf
-
-# Backup remote (dari Operational Mode)
-root> file copy /config/juniper.conf.gz scp://<BACKUP-USER>@<BACKUP-SERVER>:/backup/<HOSTNAME>/
-
-# Restore — HATI-HATI: override = ganti seluruh config
-root# load override /var/tmp/<BACKUP>.conf
-root# show | compare
-root# commit confirmed 5
-
-# Load Merge — merge, tidak delete existing
-root# load merge /var/tmp/<PARTIAL>.conf
-root# show | compare
-root# commit confirmed 5
-```
-
-### 15.2 Troubleshooting Framework
-
-1. **Apa yang berubah?** — `show system commit`, `show | compare`
-2. **Layer 1/2** — `show interfaces terse`, `show lacp`
-3. **Layer 3 / IGP** — `show ospf neighbor`, `show isis adjacency`, `show route`
-4. **MPLS / BGP** — `show mpls lsp`, `show ldp neighbor`, `show bgp summary`
-5. **Service** — `show l2circuit`, `show vpls`, `show route table <VRF>`
-6. **Log** — `show log messages | last 50`, `show log chassisd`
-
-| Gejala | Penyebab Paling Sering | Fix |
-| :--- | :--- | :--- |
-| OSPF `Init` | One-way Hello, auth mismatch, MTU mismatch | Cek hello/dead, auth, MTU, firewall multicast |
-| OSPF `ExStart` | MTU mismatch, DBD problem | Samakan MTU di core |
-| LDP `Non-Existent` | IGP belum Full, loopback tidak ter-reach | Cek `show route <LOOPBACK>` |
-| BGP `Active` | TCP 179 diblokir, `local-address` salah, AS salah | Cek PROTECT-RE izinkan 179 |
-| BGP `Idle` | `peer-as` salah, `authentication-key` mismatch | Cek peer-as, key dari vault |
-| L2VPN `Down` | VC-ID beda, VLAN mismatch, MTU mismatch, control-word beda | Samakan VC-ID, VLAN, MTU |
-| VPLS `Down` | VPLS-ID beda, encapsulation salah | Samakan VPLS-ID |
-| L3VPN ping gagal | RD/RT mismatch, MP-BGP tidak Established | Cek BGP, VRF, RT |
-| AS-Override tidak jalan | CE AS beda, `as-override` tidak di PE | Pastikan CE AS sama untuk test |
-| Sham-Link tidak Full | `lo0.1` tidak di VRF, `sham-link-remote` salah | Cek `lo0.1` di VRF |
-
+---
 
 ## Appendix A: Naming & Golden Rules
 
@@ -1451,6 +2022,21 @@ root# commit confirmed 5
 | BGP Group | `UPPER-SNAKE` | `<GROUP-NAME>` |
 | Community | `target:<AS>:<NN>` | `target:<AS>:<NN>` |
 | RD | `<AS>:<NN>` | `<AS>:<NN>` |
+
+### Golden Rules
+
+1. Selalu `show | compare` sebelum commit.
+2. Selalu `commit confirmed` untuk perubahan remote.
+3. Selalu `commit comment` dengan nomor tiket.
+4. Jangan pernah enable Telnet / FTP di produksi.
+5. Jangan pernah pakai SNMP community plaintext.
+6. Loopback adalah identitas — jangan pakai IP fisik untuk BGP / LDP / RR.
+7. MTU harus konsisten end-to-end.
+8. Default deny di semua policy & firewall — `reject` eksplisit di term terakhir.
+9. Backup sebelum change, verifikasi sesudah change.
+10. Jika ragu, `deactivate` dulu, jangan `delete`.
+
+---
 
 ## Appendix B: Quick Reference
 
@@ -1483,5 +2069,9 @@ show firewall filter <FILTER>
 show firewall counter
 ```
 
-**© 2026 — Junos OS Implementation & Operations Guide v4.0 | Professional, Public-Safe**
+---
+
+> **Disclaimer:** Dokumen ini adalah panduan implementasi. Selalu validasi di lab / staging sebelum produksi dan ikuti change management organisasi kamu. Semua nilai di sini adalah placeholder — isi dari IPAM / vault resmi kamu. Jangan publish nilai produksi di README public.
+
+**© 2026 — Junos OS Implementation & Operations Guide v5.0 | Professional, Public-Safe**
 
