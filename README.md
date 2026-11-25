@@ -2,7 +2,7 @@
 
 ## Daftar Isi
 
-- [Modul 1. Overview & Architecture](#modul-1-overview-architecture)
+- [Modul 1. Overview & Architecture](#modul-1.-overview-architecture)
 - [Modul 2. CLI & Configuration Lifecycle](#modul-2-cli-configuration-lifecycle)
 - [Modul 3. Design Decision & Trade-off Framework](#modul-3-design-decision-trade-off-framework)
 - [Modul 4. Golden Baseline](#modul-4-golden-baseline)
